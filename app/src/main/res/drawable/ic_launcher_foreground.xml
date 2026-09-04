@@ -11,6 +11,12 @@
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M30,40 L78,40 L72,68 L36,68 Z" />
-    <circle android:cx="40" android:cy="86" android:r="5" android:fillColor="#FFFFFF" />
-    <circle android:cx="68" android:cy="86" android:r="5" android:fillColor="#FFFFFF" />
+    <!-- roda kiri (lingkaran digambar sebagai path, VectorDrawable tidak punya elemen <circle>) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,81 a5,5 0 1,0 0.1,0 Z" />
+    <!-- roda kanan -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,81 a5,5 0 1,0 0.1,0 Z" />
 </vector>
