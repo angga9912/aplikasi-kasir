@@ -25,7 +25,7 @@ import com.nada.kasir.core.data.local.entity.*
         AuditLogEntity::class
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = false // aktifkan + set room.schemaLocation kalau nanti butuh migration history formal
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
