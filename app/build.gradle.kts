@@ -79,11 +79,14 @@ dependencies {
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
-    // Excel - Phase 3
-    implementation("org.apache.poi:poi-ooxml:5.2.5")
+    // Excel - (REMOVED) Apache POI is not suitable for Android; processing moved server-side
+    // implementation("org.apache.poi:poi-ooxml:5.2.5")
 
     // Image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Logging: replace Log4j with Timber for Android
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
