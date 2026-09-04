@@ -1,0 +1,153 @@
+package com.nada.kasir.feature.kasir
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.nada.kasir.core.data.local.entity.MetodePembayaran
+import com.nada.kasir.core.data.local.entity.ProductEntity
+import com.nada.kasir.core.data.repository.ProductRepository
+import com.nada.kasir.core.data.repository.TransactionRepository
+import com.nada.kasir.core.domain.model.KeranjangItem
+import com.nada.kasir.core.util.AppError
+import com.nada.kasir.core.util.Result
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class KasirUiState(
+    val query: String = "",
+    val produk: List<ProductEntity> = emptyList(),
+    val keranjang: List<KeranjangItem> = emptyList(),
+    val diskonTotal: Double = 0.0,
+    val errorPesan: String? = null,
+    val transaksiBerhasilId: Long? = null,
+    val isProsesBayar: Boolean = false
+) {
+    val subtotal: Double get() = keranjang.sumOf { it.harga * it.qty }
+    val total: Double get() = subtotal - diskonTotal
+}
+
+@HiltViewModel
+class KasirViewModel @Inject constructor(
+    private val productRepository: ProductRepository,
+    private val transactionRepository: TransactionRepository
+) : ViewModel() {
+
+    private val queryFlow = MutableStateFlow("")
+    private val keranjangFlow = MutableStateFlow<List<KeranjangItem>>(emptyList())
+    private val diskonFlow = MutableStateFlow(0.0)
+    private val errorFlow = MutableStateFlow<String?>(null)
+    private val transaksiBerhasilFlow = MutableStateFlow<Long?>(null)
+    private val prosesBayarFlow = MutableStateFlow(false)
+
+    val uiState: StateFlow<KasirUiState> = combine(
+        queryFlow.flatMapLatest { q -> if (q.isBlank()) productRepository.observeActive() else productRepository.search(q) },
+        keranjangFlow,
+        diskonFlow,
+        errorFlow,
+        transaksiBerhasilFlow,
+        prosesBayarFlow
+    ) { flows ->
+        @Suppress("UNCHECKED_CAST")
+        KasirUiState(
+            produk = flows[0] as List<ProductEntity>,
+            keranjang = flows[1] as List<KeranjangItem>,
+            diskonTotal = flows[2] as Double,
+            errorPesan = flows[3] as String?,
+            transaksiBerhasilId = flows[4] as Long?,
+            isProsesBayar = flows[5] as Boolean
+        )
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), KasirUiState())
+
+    fun onQueryChange(q: String) { queryFlow.value = q }
+
+    fun tambahKeKeranjang(product: ProductEntity) {
+        if (product.stok <= 0) {
+            errorFlow.value = AppError.StokTidakCukup.pesan
+            return
+        }
+        val current = keranjangFlow.value.toMutableList()
+        val existingIndex = current.indexOfFirst { it.productId == product.id }
+        if (existingIndex >= 0) {
+            val existing = current[existingIndex]
+            if (existing.qty + 1 > product.stok) {
+                errorFlow.value = AppError.StokTidakCukup.pesan
+                return
+            }
+            current[existingIndex] = existing.copy(qty = existing.qty + 1)
+        } else {
+            current.add(
+                KeranjangItem(
+                    productId = product.id,
+                    nama = product.nama,
+                    harga = product.hargaJual,
+                    qty = 1,
+                    stokTersedia = product.stok
+                )
+            )
+        }
+        keranjangFlow.value = current
+    }
+
+    /** Dipanggil setelah scan barcode berhasil menemukan produk (Phase 2). */
+    fun tambahDariBarcode(barcode: String) {
+        viewModelScope.launch {
+            val product = productRepository.cariByBarcode(barcode)
+            if (product == null) {
+                errorFlow.value = "Produk belum terdaftar."
+            } else {
+                tambahKeKeranjang(product)
+            }
+        }
+    }
+
+    fun ubahQty(productId: Long, qtyBaru: Int) {
+        val current = keranjangFlow.value.toMutableList()
+        val idx = current.indexOfFirst { it.productId == productId }
+        if (idx < 0) return
+        val item = current[idx]
+        if (qtyBaru <= 0) {
+            current.removeAt(idx)
+        } else if (qtyBaru > item.stokTersedia) {
+            errorFlow.value = AppError.StokTidakCukup.pesan
+            return
+        } else {
+            current[idx] = item.copy(qty = qtyBaru)
+        }
+        keranjangFlow.value = current
+    }
+
+    fun setDiskonTotal(nilai: Double) { diskonFlow.value = nilai }
+
+    fun bayar(userId: Long, metode: MetodePembayaran, jumlahDiterima: Double) {
+        viewModelScope.launch {
+            prosesBayarFlow.value = true
+            val result = transactionRepository.simpanTransaksiKasir(
+                userId = userId,
+                items = keranjangFlow.value,
+                diskonTotal = diskonFlow.value,
+                metode = metode,
+                jumlahDiterima = jumlahDiterima
+            )
+            prosesBayarFlow.value = false
+            when (result) {
+                is Result.Success -> {
+                    transaksiBerhasilFlow.value = result.data
+                    keranjangFlow.value = emptyList()
+                    diskonFlow.value = 0.0
+                }
+                is Result.Failure -> {
+                    errorFlow.value = result.error.pesan
+                }
+            }
+        }
+    }
+
+    fun mulaiTransaksiBaru() {
+        transaksiBerhasilFlow.value = null
+        keranjangFlow.value = emptyList()
+        diskonFlow.value = 0.0
+    }
+
+    fun clearError() { errorFlow.value = null }
+}
