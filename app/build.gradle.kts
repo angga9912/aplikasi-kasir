@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.nada.kasir"
-        minSdk = 24
+        minSdk = 26 // Android 8.0+. Dinaikkan dari 24 karena Apache POI (Excel) butuh MethodHandle.invoke (API 26+)
         targetSdk = 34
         versionCode = 1
         versionName = "1.0-phase1"
@@ -59,9 +59,11 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
 
     // Room (database lokal - wajib offline, poin 16 & 19)
     implementation("androidx.room:room-runtime:2.6.1")
@@ -79,14 +81,11 @@ dependencies {
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
-    // Excel - (REMOVED) Apache POI is not suitable for Android; processing moved server-side
-    // implementation("org.apache.poi:poi-ooxml:5.2.5")
+    // Excel - Phase 3
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
 
     // Image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
-
-    // Logging: replace Log4j with Timber for Android
-    implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

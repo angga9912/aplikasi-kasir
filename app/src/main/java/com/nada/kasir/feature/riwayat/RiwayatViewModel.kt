@@ -3,7 +3,11 @@ package com.nada.kasir.feature.riwayat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nada.kasir.core.data.local.entity.TransactionEntity
+import com.nada.kasir.core.data.repository.PrinterRepository
+import com.nada.kasir.core.data.repository.StoreRepository
 import com.nada.kasir.core.data.repository.TransactionRepository
+import com.nada.kasir.core.printer.BluetoothPrinterManager
+import com.nada.kasir.core.printer.StrukFormatter
 import com.nada.kasir.core.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -13,7 +17,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RiwayatViewModel @Inject constructor(
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val storeRepository: StoreRepository,
+    private val printerRepository: PrinterRepository,
+    private val bluetoothPrinterManager: BluetoothPrinterManager
 ) : ViewModel() {
 
     private val queryFlow = MutableStateFlow("")
@@ -33,6 +40,25 @@ class RiwayatViewModel @Inject constructor(
         viewModelScope.launch {
             when (val r = transactionRepository.batalkanTransaksi(id)) {
                 is Result.Failure -> onError(r.error.pesan)
+                is Result.Success -> Unit
+            }
+        }
+    }
+
+    /** Cetak Ulang struk dari riwayat (poin 13). */
+    fun cetakUlang(transactionId: Long, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val printerDefault = printerRepository.getDefault()
+            if (printerDefault == null) {
+                onError("Belum ada printer default. Atur di menu Pengaturan Printer.")
+                return@launch
+            }
+            val store = storeRepository.getOrCreateDefault()
+            val (transaksi, items, payment) = transactionRepository.getDetail(transactionId)
+            if (transaksi == null) { onError("Transaksi tidak ditemukan."); return@launch }
+            val struk = StrukFormatter.buatStruk(store, transaksi, items, payment)
+            when (val result = bluetoothPrinterManager.cetak(printerDefault.macAddress, struk)) {
+                is Result.Failure -> onError(result.error.pesan)
                 is Result.Success -> Unit
             }
         }

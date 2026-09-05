@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nada.kasir.core.data.local.entity.MetodePembayaran
 import com.nada.kasir.core.data.local.entity.ProductEntity
+import com.nada.kasir.core.data.repository.PrinterRepository
 import com.nada.kasir.core.data.repository.ProductRepository
+import com.nada.kasir.core.data.repository.StoreRepository
 import com.nada.kasir.core.data.repository.TransactionRepository
 import com.nada.kasir.core.domain.model.KeranjangItem
+import com.nada.kasir.core.printer.BluetoothPrinterManager
+import com.nada.kasir.core.printer.StrukFormatter
 import com.nada.kasir.core.util.AppError
 import com.nada.kasir.core.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +34,10 @@ data class KasirUiState(
 @HiltViewModel
 class KasirViewModel @Inject constructor(
     private val productRepository: ProductRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val storeRepository: StoreRepository,
+    private val printerRepository: PrinterRepository,
+    private val bluetoothPrinterManager: BluetoothPrinterManager
 ) : ViewModel() {
 
     private val queryFlow = MutableStateFlow("")
@@ -147,6 +154,28 @@ class KasirViewModel @Inject constructor(
         transaksiBerhasilFlow.value = null
         keranjangFlow.value = emptyList()
         diskonFlow.value = 0.0
+    }
+
+    /** Cetak struk transaksi (poin 8 & 9). Kegagalan printer tidak mengubah data transaksi. */
+    fun cetakStruk(transactionId: Long) {
+        viewModelScope.launch {
+            val printerDefault = printerRepository.getDefault()
+            if (printerDefault == null) {
+                errorFlow.value = "Belum ada printer default. Atur di menu Pengaturan Printer."
+                return@launch
+            }
+            val store = storeRepository.getOrCreateDefault()
+            val (transaksi, items, payment) = transactionRepository.getDetail(transactionId)
+            if (transaksi == null) {
+                errorFlow.value = AppError.TransaksiGagalDisimpan.pesan
+                return@launch
+            }
+            val strukBytes = StrukFormatter.buatStruk(store, transaksi, items, payment)
+            when (val result = bluetoothPrinterManager.cetak(printerDefault.macAddress, strukBytes)) {
+                is Result.Success -> Unit // sunyi, printer langsung mencetak
+                is Result.Failure -> errorFlow.value = result.error.pesan
+            }
+        }
     }
 
     fun clearError() { errorFlow.value = null }

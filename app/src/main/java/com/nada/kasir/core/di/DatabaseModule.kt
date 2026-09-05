@@ -32,4 +32,5 @@ object DatabaseModule {
     @Provides fun provideTransactionDao(db: AppDatabase): TransactionDao = db.transactionDao()
     @Provides fun provideStockMovementDao(db: AppDatabase): StockMovementDao = db.stockMovementDao()
     @Provides fun provideSettingDao(db: AppDatabase): SettingDao = db.settingDao()
+    @Provides fun providePrinterDao(db: AppDatabase): PrinterDao = db.printerDao()
 }

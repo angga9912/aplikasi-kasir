@@ -3,7 +3,37 @@
 Aplikasi kasir Android yang dapat dikustomisasi per toko/UMKM. Dibangun dengan
 Kotlin + Jetpack Compose + Room (MVVM + Repository, offline-first).
 
-## Status: PHASE 1 (selesai — siap diuji)
+## Status: PHASE 2 (selesai — siap diuji)
+
+Sudah ditambahkan di atas Phase 1:
+
+- ✅ **Barcode kamera** — CameraX + ML Kit, tombol scan di halaman Kasir, mendukung
+  EAN-13/EAN-8/CODE-128/CODE-39/UPC-A/UPC-E/QR
+- ✅ **Barcode scanner fisik (handheld)** — `HandheldScannerDetector` membedakan
+  ketikan cepat dari alat scanner vs ketikan manual kasir di kolom pencarian yang sama,
+  tanpa perlu mode/tombol terpisah
+- ✅ **Printer thermal Bluetooth** — `BluetoothPrinterManager` (koneksi SPP ke
+  perangkat yang sudah *paired*), `EscPosBuilder` (perintah ESC/POS generik,
+  kompatibel mayoritas printer 58mm/80mm di pasaran)
+- ✅ **Format & custom struk** — `StrukFormatter` mengikuti toggle tampilkan/sembunyikan
+  logo, alamat, WA, diskon dari `StoreEntity` (harga beli TIDAK PERNAH ditampilkan)
+- ✅ **Halaman Pengaturan Printer** — scan printer terpasang, pilih ukuran kertas,
+  test print, simpan sebagai default
+- ✅ **Cetak Struk** setelah bayar di Kasir, dan **Cetak Ulang** dari Riwayat Transaksi
+- ✅ Kegagalan printer tidak pernah membatalkan transaksi yang sudah tersimpan
+
+### Catatan Pengujian Phase 2
+
+- Pasangkan (pair) printer thermal Bluetooth Anda dulu lewat **Pengaturan Bluetooth
+  bawaan HP**, baru buka menu **Pengaturan Printer** di aplikasi → Scan → pilih
+  ukuran kertas → Test Print → Jadikan Default.
+- Karena kita hanya membaca daftar perangkat yang sudah *paired* (bukan discovery
+  aktif), aplikasi tidak meminta izin lokasi — hanya izin Bluetooth (Android 12+).
+- Scanner fisik (handheld) diuji dengan cara: buka Kasir, tap kolom pencarian
+  (fokuskan kursor), lalu scan barcode dengan alat — kode otomatis masuk sebagai
+  jika mengetik cepat + Enter, tanpa perlu tombol tambahan.
+
+
 
 Sudah diimplementasikan sesuai brief:
 
@@ -86,11 +116,9 @@ di ZIP ini, jadi tidak perlu setup tambahan.
 
 ## Roadmap Selanjutnya
 
-**Phase 2** — Barcode scanner (CameraX+ML Kit sudah di dependency, tinggal
-sambungkan ke `KasirViewModel.tambahDariBarcode()`), Printer Bluetooth
-(`EscPosBuilder` + `BluetoothPrinterManager`), format & custom struk, logo toko.
+**Phase 2 (selesai)** — ~~Barcode scanner~~, ~~Printer Bluetooth~~, ~~format & custom struk~~, ~~logo toko (teks)~~.
 
-**Phase 3** — Import/export Excel (Apache POI sudah di dependency), Backup/Restore.
+**Phase 3 (berikutnya)** — Import/export Excel (Apache POI sudah di dependency), Backup/Restore.
 
 **Phase 4** — Laporan (harian/bulanan/stok), User Admin/Kasir (login + role guard),
 Custom branding penuh (`ThemeConfig` dinamis dari `StoreEntity.warnaUtama`).

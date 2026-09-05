@@ -35,7 +35,10 @@ fun RiwayatScreen(viewModel: RiwayatViewModel = hiltViewModel()) {
                             if (trx.status == TransactionStatus.CANCELLED) {
                                 Text("DIBATALKAN", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                             } else {
-                                TextButton(onClick = { konfirmasiBatalId = trx.id }) { Text("Batalkan") }
+                                Row {
+                                    TextButton(onClick = { viewModel.cetakUlang(trx.id) { pesan -> errorMsg = pesan } }) { Text("Cetak Ulang") }
+                                    TextButton(onClick = { konfirmasiBatalId = trx.id }) { Text("Batalkan") }
+                                }
                             }
                         }
                     }

@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nada.kasir.core.data.local.entity.MetodePembayaran
 import com.nada.kasir.core.util.CurrencyFormatter
+import com.nada.kasir.core.util.HandheldScannerDetector
+import com.nada.kasir.feature.kasir.barcode.BarcodeScannerScreen
 
 /**
  * Halaman Kasir - fitur utama aplikasi (poin 4).
@@ -26,12 +30,32 @@ fun KasirScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var showPembayaranDialog by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
+
+    // Buffer untuk membedakan ketikan scanner fisik (handheld) vs ketikan manual kasir (poin 5, Phase 2)
+    val handheldDetector = remember {
+        HandheldScannerDetector(onBarcodeTerdeteksi = { kode ->
+            viewModel.tambahDariBarcode(kode)
+            viewModel.onQueryChange("")
+        })
+    }
+
+    if (showBarcodeScanner) {
+        BarcodeScannerScreen(
+            onDetected = { kode ->
+                showBarcodeScanner = false
+                viewModel.tambahDariBarcode(kode)
+            },
+            onClose = { showBarcodeScanner = false }
+        )
+        return
+    }
 
     if (state.transaksiBerhasilId != null) {
         TransaksiBerhasilDialog(
             onTransaksiBaru = { viewModel.mulaiTransaksiBaru() },
-            onCetak = { /* TODO Phase 2: panggil BluetoothPrinterManager */ },
-            onBagikan = { /* TODO Phase 2: share struk via FileProvider */ }
+            onCetak = { viewModel.cetakStruk(state.transaksiBerhasilId!!) },
+            onBagikan = { /* TODO Phase 3: share struk via FileProvider */ }
         )
         return
     }
@@ -50,11 +74,25 @@ fun KasirScreen(
         Column(modifier = Modifier.weight(1.4f).padding(12.dp)) {
             OutlinedTextField(
                 value = state.query,
-                onValueChange = viewModel::onQueryChange,
-                label = { Text("Cari produk / kode") },
+                onValueChange = { teksBaru ->
+                    // Deteksi karakter baru yang masuk untuk mengenali pola ketikan scanner fisik.
+                    if (teksBaru.length > state.query.length) {
+                        val karakterBaru = teksBaru.last()
+                        if (karakterBaru == '\n') {
+                            handheldDetector.onEnterOrNewline()
+                            return@OutlinedTextField
+                        } else {
+                            handheldDetector.onCharTyped(karakterBaru)
+                        }
+                    }
+                    viewModel.onQueryChange(teksBaru)
+                },
+                label = { Text("Cari produk / kode, atau scan dengan alat scanner") },
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {
-                    // TODO Phase 2: ganti dengan IconButton kamera untuk scan barcode
+                    IconButton(onClick = { showBarcodeScanner = true }) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = "Scan barcode dengan kamera")
+                    }
                 }
             )
             Spacer(Modifier.height(8.dp))

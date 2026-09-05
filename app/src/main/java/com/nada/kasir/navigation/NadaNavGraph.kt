@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.nada.kasir.feature.dashboard.DashboardScreen
 import com.nada.kasir.feature.kasir.KasirScreen
+import com.nada.kasir.feature.pengaturan_printer.PengaturanPrinterScreen
 import com.nada.kasir.feature.produk.ProdukScreen
 import com.nada.kasir.feature.riwayat.RiwayatScreen
 
@@ -15,7 +16,8 @@ sealed class NadaRoute(val route: String) {
     object Kasir : NadaRoute("kasir")
     object Produk : NadaRoute("produk")
     object Riwayat : NadaRoute("riwayat")
-    // Stok, Laporan, PengaturanToko, PengaturanPrinter ditambahkan progresif per phase
+    object PengaturanPrinter : NadaRoute("pengaturan_printer")
+    // Stok, Laporan, PengaturanToko ditambahkan progresif per phase
 }
 
 @Composable
@@ -25,11 +27,13 @@ fun NadaNavGraph(navController: NavHostController = rememberNavController(), cur
             DashboardScreen(
                 onBukaKasir = { navController.navigate(NadaRoute.Kasir.route) },
                 onBukaProduk = { navController.navigate(NadaRoute.Produk.route) },
-                onBukaRiwayat = { navController.navigate(NadaRoute.Riwayat.route) }
+                onBukaRiwayat = { navController.navigate(NadaRoute.Riwayat.route) },
+                onBukaPengaturanPrinter = { navController.navigate(NadaRoute.PengaturanPrinter.route) }
             )
         }
         composable(NadaRoute.Kasir.route) { KasirScreen(currentUserId = currentUserId) }
         composable(NadaRoute.Produk.route) { ProdukScreen() }
         composable(NadaRoute.Riwayat.route) { RiwayatScreen() }
+        composable(NadaRoute.PengaturanPrinter.route) { PengaturanPrinterScreen() }
     }
 }
