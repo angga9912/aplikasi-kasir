@@ -3,7 +3,42 @@
 Aplikasi kasir Android yang dapat dikustomisasi per toko/UMKM. Dibangun dengan
 Kotlin + Jetpack Compose + Room (MVVM + Repository, offline-first).
 
-## Status: PHASE 4 (selesai — siap diuji)
+## Status: REDESIGN UI — Home/Dashboard (selesai — siap diuji)
+
+Redesign "Modern Minimalist POS Dashboard" untuk layar Home, TANPA mengubah
+business logic/database/navigasi fungsional (hanya cara menyusun & menampilkan
+data yang sudah ada):
+
+- ✅ **Header baru** — logo/ikon toko, nama toko (dari Pengaturan Toko), sapaan
+  "Selamat datang kembali, {nama pengguna}", tanggal hari ini, ikon notifikasi
+  (placeholder, belum ada sistem notifikasi) dan menu (⋮) berisi "Keluar".
+- ✅ **Summary cards** — 4 kartu dengan ikon, label, dan angka utama; tanpa data
+  perbandingan palsu (sesuai instruksi, karena datanya memang belum tersedia).
+- ✅ **Primary Action** — "Transaksi Baru" jadi kartu besar warna utama aplikasi,
+  paling menonjol di layar.
+- ✅ **Menu Utama** — grid 2 kolom dengan ikon (Produk, Riwayat, Laporan khusus Admin),
+  menggantikan tumpukan 8 tombol outline.
+- ✅ **Perhatian Stok** — otomatis menampilkan status Stok Habis (merah) →
+  Stok Menipis (oranye) → Aman (hijau), sesuai prioritas.
+- ✅ **Transaksi Terbaru** — 5 transaksi terakhir dengan preview produk, ada
+  empty state profesional ("Belum ada transaksi..." + tombol) dan "Lihat Semua".
+- ✅ **Bottom Navigation** — Home / Kasir / Produk / Transaksi / Pengaturan,
+  selalu terlihat di layar utama. Menu administratif (Printer, Toko, Pengguna,
+  Backup) dikelompokkan di tab **Pengaturan** (halaman baru `PengaturanHubScreen`),
+  tetap dibatasi untuk Admin saja (role guard Phase 4 tidak berubah).
+- ✅ Warna mengikuti **branding dinamis** (`ThemeConfig`) yang sudah dibangun di
+  Phase 4 — bukan warna hijau hardcode, supaya kustomisasi per toko tetap jalan.
+  Warna status (aman/menipis/habis) tetap konsisten terlepas dari warna branding.
+
+### Catatan penting
+- Redesign kali ini FOKUS di layar Home/Dashboard + Bottom Navigation shell,
+  sesuai brief yang diberikan. Layar lain (Kasir, Produk, Riwayat, Laporan,
+  Pengaturan Printer/Toko, Pengguna, Backup) masih tampilan lama - siap
+  di-redesign berikutnya kalau diperlukan.
+- Semua tombol & fitur lama tetap berfungsi sama persis, hanya berpindah posisi
+  visual (mis. "Keluar" sekarang di menu ⋮ header ATAU di tab Pengaturan).
+
+
 
 Sudah ditambahkan di atas Phase 1-3:
 

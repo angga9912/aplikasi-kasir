@@ -139,4 +139,10 @@ class TransactionRepository @Inject constructor(
         val payment = transactionDao.getPayment(transactionId)
         return Triple(trx, items, payment)
     }
+
+    /** Untuk section "Transaksi Terbaru" di Dashboard (redesign UI, tidak mengubah data). */
+    suspend fun getTransaksiTerbaruDenganItem(limit: Int = 5): List<Pair<TransactionEntity, List<TransactionItemEntity>>> {
+        val transaksi = transactionDao.getTransaksiTerbaru(limit)
+        return transaksi.map { it to transactionDao.getItems(it.id) }
+    }
 }

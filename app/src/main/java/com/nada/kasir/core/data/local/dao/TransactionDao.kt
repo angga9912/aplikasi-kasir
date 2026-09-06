@@ -122,6 +122,10 @@ interface TransactionDao {
     """)
     suspend fun getProdukTerlaris(start: Long, end: Long, limit: Int): List<ProdukTerlaris>
 
+
+    @Query("SELECT * FROM transactions WHERE status = 'COMPLETED' ORDER BY tanggalWaktu DESC LIMIT :limit")
+    suspend fun getTransaksiTerbaru(limit: Int): List<TransactionEntity>
+
 }
 
 data class RingkasanMetodePembayaran(val metode: String, val total: Double, val jumlahTransaksi: Int)

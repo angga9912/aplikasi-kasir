@@ -1,6 +1,11 @@
 package com.nada.kasir.navigation
 
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -12,6 +17,7 @@ import com.nada.kasir.feature.dashboard.DashboardScreen
 import com.nada.kasir.feature.kasir.KasirScreen
 import com.nada.kasir.feature.laporan.LaporanScreen
 import com.nada.kasir.feature.login.LoginScreen
+import com.nada.kasir.feature.pengaturan_hub.PengaturanHubScreen
 import com.nada.kasir.feature.pengaturan_printer.PengaturanPrinterScreen
 import com.nada.kasir.feature.pengaturan_toko.PengaturanTokoScreen
 import com.nada.kasir.feature.pengguna.PenggunaScreen
@@ -20,10 +26,7 @@ import com.nada.kasir.feature.riwayat.RiwayatScreen
 
 sealed class NadaRoute(val route: String) {
     object Login : NadaRoute("login")
-    object Dashboard : NadaRoute("dashboard")
-    object Kasir : NadaRoute("kasir")
-    object Produk : NadaRoute("produk")
-    object Riwayat : NadaRoute("riwayat")
+    object MainShell : NadaRoute("main_shell") // berisi Home/Kasir/Produk/Riwayat/Pengaturan dengan bottom nav
     object PengaturanPrinter : NadaRoute("pengaturan_printer")
     object Backup : NadaRoute("backup")
     object Laporan : NadaRoute("laporan")
@@ -31,47 +34,29 @@ sealed class NadaRoute(val route: String) {
     object Pengguna : NadaRoute("pengguna")
 }
 
+private enum class TabUtama(val label: String, val ikon: androidx.compose.ui.graphics.vector.ImageVector) {
+    HOME("Home", Icons.Filled.Home),
+    KASIR("Kasir", Icons.Filled.PointOfSale),
+    PRODUK("Produk", Icons.Filled.Inventory2),
+    TRANSAKSI("Transaksi", Icons.Filled.ReceiptLong),
+    PENGATURAN("Pengaturan", Icons.Filled.Settings)
+}
+
 @Composable
 fun NadaNavGraph(navController: NavHostController = rememberNavController()) {
     NavHost(navController = navController, startDestination = NadaRoute.Login.route) {
         composable(NadaRoute.Login.route) {
             LoginScreen(onLoginBerhasil = {
-                navController.navigate(NadaRoute.Dashboard.route) {
+                navController.navigate(NadaRoute.MainShell.route) {
                     popUpTo(NadaRoute.Login.route) { inclusive = true }
                 }
             })
         }
-        composable(NadaRoute.Dashboard.route) {
-            val sessionManager: SessionManager = hiltViewModelSession()
-            DashboardScreen(
-                isAdmin = sessionManager.isAdmin(),
-                onBukaKasir = { navController.navigate(NadaRoute.Kasir.route) },
-                onBukaProduk = { navController.navigate(NadaRoute.Produk.route) },
-                onBukaRiwayat = { navController.navigate(NadaRoute.Riwayat.route) },
-                onBukaPengaturanPrinter = { navController.navigate(NadaRoute.PengaturanPrinter.route) },
-                onBukaBackup = { navController.navigate(NadaRoute.Backup.route) },
-                onBukaLaporan = { navController.navigate(NadaRoute.Laporan.route) },
-                onBukaPengaturanToko = { navController.navigate(NadaRoute.PengaturanToko.route) },
-                onBukaPengguna = { navController.navigate(NadaRoute.Pengguna.route) },
-                onLogout = {
-                    sessionManager.logout()
-                    navController.navigate(NadaRoute.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
+        composable(NadaRoute.MainShell.route) {
+            MainShell(
+                navController = navController,
+                sessionManager = hiltViewModelSession()
             )
-        }
-        composable(NadaRoute.Kasir.route) {
-            val sessionManager: SessionManager = hiltViewModelSession()
-            KasirScreen(currentUserId = sessionManager.currentUser.value?.id ?: 1L)
-        }
-        composable(NadaRoute.Produk.route) {
-            val sessionManager: SessionManager = hiltViewModelSession()
-            ProdukScreen(isAdmin = sessionManager.isAdmin())
-        }
-        composable(NadaRoute.Riwayat.route) {
-            val sessionManager: SessionManager = hiltViewModelSession()
-            RiwayatScreen(isAdmin = sessionManager.isAdmin())
         }
         composable(NadaRoute.PengaturanPrinter.route) { PengaturanPrinterScreen() }
         composable(NadaRoute.Backup.route) { BackupScreen() }
@@ -82,9 +67,69 @@ fun NadaNavGraph(navController: NavHostController = rememberNavController()) {
 }
 
 /**
- * SessionManager di-scope Singleton lewat Hilt, jadi instance yang sama bisa
- * diambil dari Composable manapun tanpa perlu diteruskan lewat parameter terus-menerus.
+ * Shell dengan Bottom Navigation (poin 6 brief redesign). Tab di-switch dengan
+ * state lokal (bukan back-stack terpisah) karena ini murni navigasi UI antar
+ * tab utama - tidak ada perubahan pada logic/data di baliknya.
+ * Menu administratif (Laporan, Pengaturan Printer/Toko, Pengguna, Backup)
+ * tetap dibuka lewat NavController luar (poin 5: dikelompokkan, tapi tetap mudah ditemukan).
  */
+@Composable
+private fun MainShell(navController: NavHostController, sessionManager: SessionManager) {
+    var tabAktif by rememberSaveable { mutableStateOf(TabUtama.HOME) }
+    val isAdmin = sessionManager.isAdmin()
+    val namaPengguna = sessionManager.currentUser.value?.nama ?: "Pengguna"
+    val currentUserId = sessionManager.currentUser.value?.id ?: 1L
+
+    fun logout() {
+        sessionManager.logout()
+        navController.navigate(NadaRoute.Login.route) { popUpTo(0) { inclusive = true } }
+    }
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                TabUtama.values().forEach { tab ->
+                    NavigationBarItem(
+                        selected = tabAktif == tab,
+                        onClick = { tabAktif = tab },
+                        icon = { Icon(tab.ikon, contentDescription = tab.label) },
+                        label = { Text(tab.label) }
+                    )
+                }
+            }
+        }
+    ) { padding ->
+        androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier.padding(padding)) {
+            when (tabAktif) {
+                TabUtama.HOME -> DashboardScreen(
+                    isAdmin = isAdmin,
+                    namaPengguna = namaPengguna,
+                    onBukaKasir = { tabAktif = TabUtama.KASIR },
+                    onBukaProduk = { tabAktif = TabUtama.PRODUK },
+                    onBukaRiwayat = { tabAktif = TabUtama.TRANSAKSI },
+                    onBukaPengaturanPrinter = { navController.navigate(NadaRoute.PengaturanPrinter.route) },
+                    onBukaBackup = { navController.navigate(NadaRoute.Backup.route) },
+                    onBukaLaporan = { navController.navigate(NadaRoute.Laporan.route) },
+                    onBukaPengaturanToko = { navController.navigate(NadaRoute.PengaturanToko.route) },
+                    onBukaPengguna = { navController.navigate(NadaRoute.Pengguna.route) },
+                    onLogout = ::logout
+                )
+                TabUtama.KASIR -> KasirScreen(currentUserId = currentUserId)
+                TabUtama.PRODUK -> ProdukScreen(isAdmin = isAdmin)
+                TabUtama.TRANSAKSI -> RiwayatScreen(isAdmin = isAdmin)
+                TabUtama.PENGATURAN -> PengaturanHubScreen(
+                    isAdmin = isAdmin,
+                    onBukaPengaturanPrinter = { navController.navigate(NadaRoute.PengaturanPrinter.route) },
+                    onBukaPengaturanToko = { navController.navigate(NadaRoute.PengaturanToko.route) },
+                    onBukaPengguna = { navController.navigate(NadaRoute.Pengguna.route) },
+                    onBukaBackup = { navController.navigate(NadaRoute.Backup.route) },
+                    onLogout = ::logout
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun hiltViewModelSession(): SessionManager {
     val holder: SessionHolderViewModel = hiltViewModel()
