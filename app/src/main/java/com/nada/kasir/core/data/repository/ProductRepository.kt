@@ -1,16 +1,20 @@
 package com.nada.kasir.core.data.repository
 
+import com.nada.kasir.core.data.local.AppDatabase
 import com.nada.kasir.core.data.local.dao.ProductDao
 import com.nada.kasir.core.data.local.entity.ProductEntity
+import com.nada.kasir.core.excel.ProdukRowValidationResult
 import com.nada.kasir.core.util.AppError
 import com.nada.kasir.core.util.Result
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ProductRepository @Inject constructor(
-    private val productDao: ProductDao
+    private val productDao: ProductDao,
+    private val appDatabase: AppDatabase
 ) {
     fun observeActive(): Flow<List<ProductEntity>> = productDao.observeActiveProducts()
 
@@ -45,5 +49,35 @@ class ProductRepository @Inject constructor(
 
     suspend fun hapus(id: Long) {
         productDao.softDelete(id, System.currentTimeMillis()) // soft delete, poin 26
+    }
+
+    /**
+     * Import massal dari Excel (poin 6 & 15). Baris dengan barcode yang sudah
+     * ada di database DILEWATI (bukan menimpa), supaya import ulang tidak
+     * merusak data yang sudah ada. Semua baris valid disimpan dalam satu
+     * DB transaction.
+     */
+    suspend fun importBanyak(baris: List<ProdukRowValidationResult.Valid>): Pair<Int, List<String>> {
+        var jumlahBerhasil = 0
+        val dilewati = mutableListOf<String>()
+
+        appDatabase.withTransaction {
+            baris.forEach { b ->
+                val sudahAda = !b.barcode.isNullOrBlank() && productDao.countByBarcode(b.barcode) > 0
+                if (sudahAda) {
+                    dilewati.add("${b.kodeProduk} (barcode sudah terdaftar)")
+                } else {
+                    productDao.insert(
+                        ProductEntity(
+                            kodeProduk = b.kodeProduk, barcode = b.barcode, nama = b.nama,
+                            categoryId = null, hargaBeli = b.hargaBeli, hargaJual = b.hargaJual,
+                            stok = b.stok, stokMinimum = 5
+                        )
+                    )
+                    jumlahBerhasil++
+                }
+            }
+        }
+        return jumlahBerhasil to dilewati
     }
 }

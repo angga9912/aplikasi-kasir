@@ -55,6 +55,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
@@ -89,4 +90,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    // org.json bawaan Android SDK adalah stub yang error saat dipanggil di unit test JVM;
+    // dependency ini menyediakan implementasi asli khusus untuk classpath unit test.
+    testImplementation("org.json:json:20231013")
 }

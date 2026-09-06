@@ -23,4 +23,14 @@ interface PrinterDao {
 
     @Delete
     suspend fun delete(printer: PrinterEntity)
+
+    @Query("SELECT * FROM printers")
+    suspend fun getAllForBackup(): List<PrinterEntity>
+
+    @Insert
+    suspend fun insertAll(printers: List<PrinterEntity>): List<Long>
+
+    @Query("DELETE FROM printers")
+    suspend fun clearAll()
+
 }

@@ -3,7 +3,40 @@
 Aplikasi kasir Android yang dapat dikustomisasi per toko/UMKM. Dibangun dengan
 Kotlin + Jetpack Compose + Room (MVVM + Repository, offline-first).
 
-## Status: PHASE 2 (selesai — siap diuji)
+## Status: PHASE 3 (selesai — siap diuji)
+
+Sudah ditambahkan di atas Phase 1 & 2:
+
+- ✅ **Export Excel** — `ExcelExporter` menghasilkan `DATA_PRODUK.xlsx`, `PENJUALAN.xlsx`,
+  `STOK_MASUK.xlsx`, `STOK_KELUAR.xlsx` sesuai kolom yang ditentukan (poin 15).
+  Tombol "Export Excel" ada di halaman Produk; hasilnya bisa langsung dibagikan (share).
+- ✅ **Import Excel** — `ExcelImporter` + `ProdukRowValidator` memvalidasi header &
+  setiap baris (kode/nama wajib, harga & stok harus angka), barcode duplikat
+  otomatis DILEWATI (bukan menimpa), semua baris valid disimpan dalam satu
+  DB transaction. Pesan error tetap berbahasa manusia ("File Excel tidak sesuai format.")
+- ✅ **Backup Data** — `BackupManager` mengekspor seluruh data penting (Produk, Stok,
+  Transaksi, Pengaturan Toko, Pengguna, Printer) ke satu file `.json`, bisa dibagikan.
+- ✅ **Restore Data** — validasi & parsing PENUH dilakukan dulu sebelum data lama
+  disentuh sama sekali; penghapusan + penyisipan data baru dibungkus SATU
+  `appDatabase.withTransaction{}` sehingga kalau ada error di tengah proses,
+  Room otomatis rollback dan **data lama tetap utuh** (poin 17, tidak pernah ada
+  kondisi "data lama sudah terhapus tapi data baru gagal masuk").
+- ✅ Excel/backup HANYA untuk laporan & cadangan — database utama tetap Room/SQLite (poin 15).
+
+### Catatan Pengujian Phase 3
+
+- File export & backup disimpan di folder khusus aplikasi (tidak perlu izin
+  penyimpanan tambahan), lalu dibagikan lewat Share Sheet Android (WhatsApp,
+  Google Drive, email, dll) memakai `FileProvider`.
+- Untuk uji Import Excel: buat file `.xlsx` dengan sheet bernama `DATA_PRODUK`
+  dan header persis: `Kode Produk, Barcode, Nama Produk, Kategori, Satuan, Harga Beli, Harga Jual, Stok, Stok Minimum`
+  (atau langsung pakai hasil Export Excel sebagai template, edit, lalu import lagi).
+- Untuk uji Restore: coba restore file backup yang sengaja dirusak (hapus beberapa
+  karakter) — aplikasi harus menampilkan "File Excel tidak sesuai format." dan
+  **data yang ada saat ini tidak boleh hilang sama sekali**. Ini pengujian paling
+  penting di Phase 3.
+
+
 
 Sudah ditambahkan di atas Phase 1:
 
@@ -118,9 +151,9 @@ di ZIP ini, jadi tidak perlu setup tambahan.
 
 **Phase 2 (selesai)** — ~~Barcode scanner~~, ~~Printer Bluetooth~~, ~~format & custom struk~~, ~~logo toko (teks)~~.
 
-**Phase 3 (berikutnya)** — Import/export Excel (Apache POI sudah di dependency), Backup/Restore.
+**Phase 3 (selesai)** — ~~Import/export Excel~~, ~~Backup/Restore~~.
 
-**Phase 4** — Laporan (harian/bulanan/stok), User Admin/Kasir (login + role guard),
+**Phase 4 (berikutnya)** — Laporan (harian/bulanan/stok), User Admin/Kasir (login + role guard),
 Custom branding penuh (`ThemeConfig` dinamis dari `StoreEntity.warnaUtama`).
 
 **Phase 5** — Modul opsional per pelanggan: Hutang/Piutang, Supplier, Multi cabang

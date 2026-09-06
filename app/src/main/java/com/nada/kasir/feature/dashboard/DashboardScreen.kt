@@ -18,6 +18,7 @@ fun DashboardScreen(
     onBukaProduk: () -> Unit,
     onBukaRiwayat: () -> Unit,
     onBukaPengaturanPrinter: () -> Unit,
+    onBukaBackup: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -47,6 +48,8 @@ fun DashboardScreen(
         OutlinedButton(onClick = onBukaRiwayat, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Riwayat Transaksi") }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = onBukaPengaturanPrinter, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Pengaturan Printer") }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = onBukaBackup, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Backup & Restore Data") }
     }
 }
 

@@ -13,4 +13,14 @@ interface CategoryDao {
 
     @Insert
     suspend fun insert(category: CategoryEntity): Long
+
+    @Insert
+    suspend fun insertAll(categories: List<CategoryEntity>): List<Long>
+
+    @Query("SELECT * FROM categories")
+    suspend fun getAllForBackup(): List<CategoryEntity>
+
+    @Query("DELETE FROM categories")
+    suspend fun clearAll()
+
 }

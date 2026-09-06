@@ -20,4 +20,14 @@ interface StoreDao {
 
     @Update
     suspend fun update(store: StoreEntity)
+
+    @Query("SELECT * FROM stores")
+    suspend fun getAllForBackup(): List<StoreEntity>
+
+    @Insert
+    suspend fun insertAll(stores: List<StoreEntity>): List<Long>
+
+    @Query("DELETE FROM stores")
+    suspend fun clearAll()
+
 }

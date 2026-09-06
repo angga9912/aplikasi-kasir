@@ -16,4 +16,14 @@ interface UserDao {
 
     @Insert
     suspend fun insert(user: UserEntity): Long
+
+    @Insert
+    suspend fun insertAll(users: List<UserEntity>): List<Long>
+
+    @Query("SELECT * FROM users")
+    suspend fun getAllForBackup(): List<UserEntity>
+
+    @Query("DELETE FROM users")
+    suspend fun clearAll()
+
 }

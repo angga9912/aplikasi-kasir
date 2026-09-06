@@ -46,4 +46,33 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions WHERE status = 'COMPLETED' AND tanggalWaktu BETWEEN :startMillis AND :endMillis")
     fun observeJumlahTransaksi(startMillis: Long, endMillis: Long): Flow<Int>
+
+    // === Untuk Backup/Restore & Export Excel (Phase 3) ===
+    @Query("SELECT * FROM transactions")
+    suspend fun getAllTransactionsForBackup(): List<TransactionEntity>
+
+    @Query("SELECT * FROM transaction_items")
+    suspend fun getAllItemsForBackup(): List<TransactionItemEntity>
+
+    @Query("SELECT * FROM payments")
+    suspend fun getAllPaymentsForBackup(): List<PaymentEntity>
+
+    @Insert
+    suspend fun insertAllTransactions(transactions: List<TransactionEntity>): List<Long>
+
+    @Insert
+    suspend fun insertAllItems(items: List<TransactionItemEntity>)
+
+    @Insert
+    suspend fun insertAllPayments(payments: List<PaymentEntity>)
+
+    @Query("DELETE FROM transactions")
+    suspend fun clearTransactions()
+
+    @Query("DELETE FROM transaction_items")
+    suspend fun clearItems()
+
+    @Query("DELETE FROM payments")
+    suspend fun clearPayments()
+
 }

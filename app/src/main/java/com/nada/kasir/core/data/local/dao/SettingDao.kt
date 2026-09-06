@@ -17,4 +17,11 @@ interface SettingDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(setting: SettingEntity)
+
+    @Query("SELECT * FROM settings")
+    suspend fun getAllForBackup(): List<SettingEntity>
+
+    @Query("DELETE FROM settings")
+    suspend fun clearAll()
+
 }

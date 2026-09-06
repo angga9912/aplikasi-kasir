@@ -16,4 +16,14 @@ interface StockMovementDao {
 
     @Query("SELECT * FROM stock_movements ORDER BY tanggalWaktu DESC")
     fun observeAll(): Flow<List<StockMovementEntity>>
+
+    @Query("SELECT * FROM stock_movements")
+    suspend fun getAllForBackup(): List<StockMovementEntity>
+
+    @Insert
+    suspend fun insertAll(movements: List<StockMovementEntity>): List<Long>
+
+    @Query("DELETE FROM stock_movements")
+    suspend fun clearAll()
+
 }

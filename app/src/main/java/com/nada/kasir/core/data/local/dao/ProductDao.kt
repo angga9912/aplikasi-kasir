@@ -49,4 +49,15 @@ interface ProductDao {
 
     @Query("SELECT stok FROM products WHERE id = :productId")
     suspend fun getStok(productId: Long): Int
+
+    // === Untuk Backup/Restore & Import Excel (Phase 3) ===
+    @Insert
+    suspend fun insertAll(products: List<ProductEntity>): List<Long>
+
+    @Query("SELECT * FROM products") // termasuk yang non-aktif/soft-deleted, untuk backup lengkap
+    suspend fun getAllForBackup(): List<ProductEntity>
+
+    @Query("DELETE FROM products")
+    suspend fun clearAll()
+
 }
