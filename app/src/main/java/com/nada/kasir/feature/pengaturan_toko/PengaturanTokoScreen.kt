@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -156,6 +158,6 @@ private fun BarisToggle(label: String, checked: Boolean, onCheckedChange: (Boole
 // Helper kecil supaya Column bisa discroll tanpa nambah dependency baru di sini
 @Composable
 private fun Modifier.verticalScrollFallback(): Modifier {
-    val scrollState = androidx.compose.foundation.rememberScrollState()
-    return this.then(androidx.compose.foundation.verticalScroll(scrollState))
+    val scrollState = rememberScrollState()
+    return this.verticalScroll(scrollState)
 }
