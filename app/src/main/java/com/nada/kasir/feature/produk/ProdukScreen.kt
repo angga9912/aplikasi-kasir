@@ -19,7 +19,7 @@ import com.nada.kasir.core.util.FileShareHelper
 
 /** Halaman DATA PRODUK (poin 6), dengan Import/Export Excel (poin 15, Phase 3). */
 @Composable
-fun ProdukScreen(viewModel: ProdukViewModel = hiltViewModel()) {
+fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewModel()) {
     val produkList by viewModel.daftarProduk.collectAsState()
     val pesanImportExport by viewModel.pesanImportExport.collectAsState()
     val fileExportTerakhir by viewModel.fileExportTerakhir.collectAsState()
@@ -34,24 +34,28 @@ fun ProdukScreen(viewModel: ProdukViewModel = hiltViewModel()) {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { editing = null; showForm = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Tambah Produk")
+            if (isAdmin) {
+                FloatingActionButton(onClick = { editing = null; showForm = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Tambah Produk")
+                }
             }
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        pilihFileImport.launch(arrayOf(
-                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "*/*"
-                        ))
-                    },
-                    modifier = Modifier.weight(1f)
-                ) { Text("Import Excel") }
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(onClick = { viewModel.exportExcel() }, modifier = Modifier.weight(1f)) {
-                    Text("Export Excel")
+            if (isAdmin) {
+                Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            pilihFileImport.launch(arrayOf(
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "*/*"
+                            ))
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Import Excel") }
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedButton(onClick = { viewModel.exportExcel() }, modifier = Modifier.weight(1f)) {
+                        Text("Export Excel")
+                    }
                 }
             }
 
@@ -63,9 +67,11 @@ fun ProdukScreen(viewModel: ProdukViewModel = hiltViewModel()) {
                             Text("${produk.kodeProduk} • Stok: ${produk.stok} • ${CurrencyFormatter.format(produk.hargaJual)}")
                         },
                         trailingContent = {
-                            Row {
-                                TextButton(onClick = { editing = produk; showForm = true }) { Text("Edit") }
-                                TextButton(onClick = { viewModel.hapus(produk.id) }) { Text("Hapus") }
+                            if (isAdmin) {
+                                Row {
+                                    TextButton(onClick = { editing = produk; showForm = true }) { Text("Edit") }
+                                    TextButton(onClick = { viewModel.hapus(produk.id) }) { Text("Hapus") }
+                                }
                             }
                         }
                     )

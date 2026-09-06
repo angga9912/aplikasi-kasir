@@ -75,4 +75,54 @@ interface TransactionDao {
     @Query("DELETE FROM payments")
     suspend fun clearPayments()
 
+
+    // === LAPORAN (Phase 4, poin 14) ===
+    @Query("""
+        SELECT ti.* FROM transaction_items ti
+        INNER JOIN transactions t ON t.id = ti.transactionId
+        WHERE t.status = 'COMPLETED' AND t.tanggalWaktu BETWEEN :start AND :end
+    """)
+    suspend fun getItemsSelesaiDalamRentang(start: Long, end: Long): List<TransactionItemEntity>
+
+    @Query("""
+        SELECT SUM(diskon) FROM transactions
+        WHERE status = 'COMPLETED' AND tanggalWaktu BETWEEN :start AND :end
+    """)
+    suspend fun getTotalDiskonDalamRentang(start: Long, end: Long): Double?
+
+    @Query("""
+        SELECT p.metode as metode, SUM(t.total) as total, COUNT(*) as jumlahTransaksi
+        FROM payments p
+        INNER JOIN transactions t ON t.id = p.transactionId
+        WHERE t.status = 'COMPLETED' AND t.tanggalWaktu BETWEEN :start AND :end
+        GROUP BY p.metode
+    """)
+    suspend fun getRingkasanMetodePembayaran(start: Long, end: Long): List<RingkasanMetodePembayaran>
+
+    @Query("""
+        SELECT COALESCE(SUM(total), 0) FROM transactions
+        WHERE status = 'COMPLETED' AND tanggalWaktu BETWEEN :start AND :end
+    """)
+    suspend fun getTotalPenjualanDalamRentang(start: Long, end: Long): Double
+
+    @Query("""
+        SELECT COUNT(*) FROM transactions
+        WHERE status = 'COMPLETED' AND tanggalWaktu BETWEEN :start AND :end
+    """)
+    suspend fun getJumlahTransaksiDalamRentang(start: Long, end: Long): Int
+
+    @Query("""
+        SELECT ti.productId as productId, ti.namaProdukSnapshot as nama, SUM(ti.qty) as totalQty
+        FROM transaction_items ti
+        INNER JOIN transactions t ON t.id = ti.transactionId
+        WHERE t.status = 'COMPLETED' AND t.tanggalWaktu BETWEEN :start AND :end
+        GROUP BY ti.productId
+        ORDER BY totalQty DESC
+        LIMIT :limit
+    """)
+    suspend fun getProdukTerlaris(start: Long, end: Long, limit: Int): List<ProdukTerlaris>
+
 }
+
+data class RingkasanMetodePembayaran(val metode: String, val total: Double, val jumlahTransaksi: Int)
+data class ProdukTerlaris(val productId: Long, val nama: String, val totalQty: Int)

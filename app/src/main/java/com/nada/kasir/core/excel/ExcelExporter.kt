@@ -90,6 +90,27 @@ class ExcelExporter(private val context: Context) {
     fun exportStokKeluar(movements: List<StockMovementEntity>, namaProduk: (Long) -> String): File =
         exportMutasiStok(movements.filter { it.tipe != TipeMutasiStok.MASUK }, namaProduk, tipeMasuk = false)
 
+    /** Export ringkasan laporan (poin 14). */
+    fun exportLaporan(
+        namaSheet: String,
+        totalPenjualan: Double, jumlahTransaksi: Int, produkTerjual: Int,
+        totalDiskon: Double, estimasiKeuntungan: Double
+    ): File {
+        val wb = XSSFWorkbook()
+        val sheet = wb.createSheet(namaSheet)
+        buatHeader(sheet, listOf("Keterangan", "Nilai"))
+        val baris = listOf(
+            "Total Penjualan" to totalPenjualan, "Jumlah Transaksi" to jumlahTransaksi.toDouble(),
+            "Produk Terjual" to produkTerjual.toDouble(), "Total Diskon" to totalDiskon,
+            "Estimasi Keuntungan" to estimasiKeuntungan
+        )
+        baris.forEachIndexed { idx, (label, nilai) ->
+            val row = sheet.createRow(idx + 1)
+            isi(row.createCell(0), label); isi(row.createCell(1), nilai)
+        }
+        return simpan(wb, namaSheet)
+    }
+
     private fun exportMutasiStok(movements: List<StockMovementEntity>, namaProduk: (Long) -> String, tipeMasuk: Boolean): File {
         val wb = XSSFWorkbook()
         val namaSheet = if (tipeMasuk) "STOK_MASUK" else "STOK_KELUAR"

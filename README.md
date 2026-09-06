@@ -3,7 +3,38 @@
 Aplikasi kasir Android yang dapat dikustomisasi per toko/UMKM. Dibangun dengan
 Kotlin + Jetpack Compose + Room (MVVM + Repository, offline-first).
 
-## Status: PHASE 3 (selesai — siap diuji)
+## Status: PHASE 4 (selesai — siap diuji)
+
+Sudah ditambahkan di atas Phase 1-3:
+
+- ✅ **Login & Role Guard** — wajib login sebelum masuk aplikasi. **ADMIN** melihat
+  semua menu; **KASIR** hanya melihat Transaksi, Lihat Produk (read-only), Riwayat
+  (bisa cetak ulang, TIDAK BISA membatalkan transaksi) — sesuai poin 18.
+  Akun pertama (`admin` / `admin123`) dibuat otomatis saat first-run, dengan
+  pemberitahuan untuk segera diganti.
+- ✅ **Manajemen Pengguna** (khusus Admin) — tambah akun Kasir/Admin baru, password
+  selalu di-hash (poin 26), lihat status aktif/nonaktif.
+- ✅ **Pengaturan Toko** (poin 1, akhirnya dibuatkan UI-nya) — nama, alamat, WA,
+  telepon, pemilik, slogan, footer struk, mata uang, ukuran kertas, TERMASUK
+  toggle tampilan struk (poin 10). Harga beli tetap dipaksa `false` dari UI ini.
+- ✅ **Custom Branding penuh** (poin 2 & 21) — `ThemeConfig` menghasilkan warna
+  aplikasi Compose secara RUNTIME dari `StoreEntity.warnaUtama`. Ganti warna di
+  Pengaturan Toko → seluruh aplikasi langsung berubah warna, tanpa rebuild.
+- ✅ **Laporan** (poin 14) — tab Hari Ini / Bulanan / Stok: total penjualan, jumlah
+  transaksi, produk terjual, diskon, estimasi keuntungan, produk terlaris,
+  breakdown metode pembayaran, semua bisa di-export ke Excel.
+
+### Catatan Pengujian Phase 4
+
+- Login pertama kali pakai `admin` / `admin123` (muncul otomatis di dialog saat
+  akun ini baru dibuat). Segera buat akun Kasir baru lewat Manajemen Pengguna,
+  lalu coba login sebagai Kasir untuk memverifikasi menu yang disembunyikan.
+- Ubah warna di Pengaturan Toko, lalu kembali ke Dashboard — tombol-tombol
+  harus langsung berubah warna tanpa perlu restart aplikasi.
+- Cek Laporan Hari Ini setelah melakukan beberapa transaksi kasir — angka
+  "Estimasi Keuntungan" dan "Produk Terjual" harus sesuai perhitungan manual.
+
+
 
 Sudah ditambahkan di atas Phase 1 & 2:
 
@@ -153,10 +184,9 @@ di ZIP ini, jadi tidak perlu setup tambahan.
 
 **Phase 3 (selesai)** — ~~Import/export Excel~~, ~~Backup/Restore~~.
 
-**Phase 4 (berikutnya)** — Laporan (harian/bulanan/stok), User Admin/Kasir (login + role guard),
-Custom branding penuh (`ThemeConfig` dinamis dari `StoreEntity.warnaUtama`).
+**Phase 4 (selesai)** — ~~Laporan~~, ~~User Admin/Kasir~~, ~~Custom Branding penuh~~.
 
-**Phase 5** — Modul opsional per pelanggan: Hutang/Piutang, Supplier, Multi cabang
+**Phase 5 (berikutnya)** — Modul opsional per pelanggan: Hutang/Piutang, Supplier, Multi cabang
 — ditambahkan sebagai modul baru di `feature/`, tanpa mengubah `core/`.
 
 ## Struktur Folder

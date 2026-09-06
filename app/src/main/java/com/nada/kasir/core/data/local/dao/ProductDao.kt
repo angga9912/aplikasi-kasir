@@ -60,4 +60,10 @@ interface ProductDao {
     @Query("DELETE FROM products")
     suspend fun clearAll()
 
+
+    @Query("SELECT id, hargaBeli FROM products")
+    suspend fun getSemuaHargaBeli(): List<HargaBeliProduk>
+
 }
+
+data class HargaBeliProduk(val id: Long, val hargaBeli: Double)

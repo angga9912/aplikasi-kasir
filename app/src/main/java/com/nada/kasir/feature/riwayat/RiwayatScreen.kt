@@ -15,7 +15,7 @@ import java.util.*
 
 /** RIWAYAT PENJUALAN (poin 13). */
 @Composable
-fun RiwayatScreen(viewModel: RiwayatViewModel = hiltViewModel()) {
+fun RiwayatScreen(isAdmin: Boolean = true, viewModel: RiwayatViewModel = hiltViewModel()) {
     val riwayat by viewModel.riwayat.collectAsState()
     var konfirmasiBatalId by remember { mutableStateOf<Long?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -37,7 +37,9 @@ fun RiwayatScreen(viewModel: RiwayatViewModel = hiltViewModel()) {
                             } else {
                                 Row {
                                     TextButton(onClick = { viewModel.cetakUlang(trx.id) { pesan -> errorMsg = pesan } }) { Text("Cetak Ulang") }
-                                    TextButton(onClick = { konfirmasiBatalId = trx.id }) { Text("Batalkan") }
+                                    if (isAdmin) {
+                                        TextButton(onClick = { konfirmasiBatalId = trx.id }) { Text("Batalkan") }
+                                    }
                                 }
                             }
                         }
