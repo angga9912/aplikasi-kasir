@@ -40,11 +40,23 @@ object StrukFormatter {
         if (store.tampilkanWaStruk && store.whatsapp.isNotBlank()) builder.textLine("WA: ${store.whatsapp}")
         builder.garis(lebar)
 
+        // Nomor antrian - dicetak besar & tebal agar mudah dipanggil (reset otomatis tiap hari)
+        if (transaction.nomorAntrian > 0) {
+            builder.alignCenter()
+            builder.fontSizeBesar().bold(true)
+            builder.textLine("NO. ANTRIAN: ${transaction.nomorAntrian}")
+            builder.fontSizeNormal().bold(false)
+            builder.garis(lebar)
+        }
+
         // Info transaksi
         builder.alignLeft()
         builder.textLine("No: ${transaction.noTransaksi}")
         builder.textLine("Tanggal: ${sdfTanggal.format(tanggalTransaksi)}")
         builder.textLine("Jam: ${sdfJam.format(tanggalTransaksi)}")
+        if (!transaction.namaPembeli.isNullOrBlank()) {
+            builder.textLine("Pembeli: ${transaction.namaPembeli}")
+        }
         builder.garis(lebar)
 
         // Daftar item
@@ -111,9 +123,17 @@ object StrukFormatter {
         if (store.tampilkanWaStruk && store.whatsapp.isNotBlank()) tengah("WA: ${store.whatsapp}")
         garis()
 
+        if (transaction.nomorAntrian > 0) {
+            tengah("NO. ANTRIAN: ${transaction.nomorAntrian}")
+            garis()
+        }
+
         sb.append("No: ${transaction.noTransaksi}\n")
         sb.append("Tanggal: ${sdfTanggal.format(tanggalTransaksi)}\n")
         sb.append("Jam: ${sdfJam.format(tanggalTransaksi)}\n")
+        if (!transaction.namaPembeli.isNullOrBlank()) {
+            sb.append("Pembeli: ${transaction.namaPembeli}\n")
+        }
         garis()
 
         items.forEach { item ->

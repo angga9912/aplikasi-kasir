@@ -8,6 +8,7 @@ import com.nada.kasir.core.data.local.entity.*
 import com.nada.kasir.core.domain.logic.PembayaranCalculator
 import com.nada.kasir.core.domain.model.KeranjangItem
 import com.nada.kasir.core.util.AppError
+import com.nada.kasir.core.util.NomorAntrianGenerator
 import com.nada.kasir.core.util.NomorTransaksiGenerator
 import com.nada.kasir.core.util.Result
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +20,8 @@ class TransactionRepository @Inject constructor(
     private val appDatabase: AppDatabase,
     private val transactionDao: TransactionDao,
     private val productDao: ProductDao,
-    private val nomorTransaksiGenerator: NomorTransaksiGenerator
+    private val nomorTransaksiGenerator: NomorTransaksiGenerator,
+    private val nomorAntrianGenerator: NomorAntrianGenerator
 ) {
 
     /**
@@ -34,7 +36,8 @@ class TransactionRepository @Inject constructor(
         items: List<KeranjangItem>,
         diskonTotal: Double,
         metode: MetodePembayaran,
-        jumlahDiterima: Double
+        jumlahDiterima: Double,
+        namaPembeli: String? = null
     ): Result<Long> {
         val subtotal = items.sumOf { it.harga * it.qty }
         val total = subtotal - diskonTotal
@@ -54,10 +57,13 @@ class TransactionRepository @Inject constructor(
         return try {
             val transactionId = appDatabase.withTransaction {
                 val noTransaksi = nomorTransaksiGenerator.generate()
+                val nomorAntrian = nomorAntrianGenerator.generate()
 
                 val trxId = transactionDao.insertTransaction(
                     TransactionEntity(
                         noTransaksi = noTransaksi,
+                        nomorAntrian = nomorAntrian,
+                        namaPembeli = namaPembeli?.trim()?.ifBlank { null },
                         tanggalWaktu = System.currentTimeMillis(),
                         userId = userId,
                         subtotal = subtotal,

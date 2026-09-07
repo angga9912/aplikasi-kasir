@@ -71,12 +71,15 @@ object EntityJsonMapper {
     )
 
     fun transactionToJson(t: TransactionEntity) = JSONObject().apply {
-        put("id", t.id); put("noTransaksi", t.noTransaksi); put("tanggalWaktu", t.tanggalWaktu)
+        put("id", t.id); put("noTransaksi", t.noTransaksi); put("nomorAntrian", t.nomorAntrian)
+        put("namaPembeli", t.namaPembeli ?: JSONObject.NULL); put("tanggalWaktu", t.tanggalWaktu)
         put("userId", t.userId); put("subtotal", t.subtotal); put("diskon", t.diskon)
         put("total", t.total); put("status", t.status.name)
     }
     fun transactionFromJson(o: JSONObject) = TransactionEntity(
-        noTransaksi = o.getString("noTransaksi"), tanggalWaktu = o.getLong("tanggalWaktu"),
+        noTransaksi = o.getString("noTransaksi"), nomorAntrian = o.optInt("nomorAntrian", 0),
+        namaPembeli = if (o.isNull("namaPembeli")) null else o.optString("namaPembeli"),
+        tanggalWaktu = o.getLong("tanggalWaktu"),
         userId = o.optLong("userId", 1L), subtotal = o.getDouble("subtotal"), diskon = o.optDouble("diskon", 0.0),
         total = o.getDouble("total"), status = TransactionStatus.valueOf(o.optString("status", "COMPLETED"))
     )

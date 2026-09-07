@@ -30,7 +30,7 @@ fun RiwayatScreen(isAdmin: Boolean = true, viewModel: RiwayatViewModel = hiltVie
         LazyColumn {
             items(riwayat) { trx ->
                 ListItem(
-                    headlineContent = { Text(trx.noTransaksi) },
+                    headlineContent = { Text("${trx.noTransaksi}${if (trx.nomorAntrian > 0) "  •  Antrian #${trx.nomorAntrian}" else ""}") },
                     supportingContent = { Text(sdf.format(Date(trx.tanggalWaktu))) },
                     trailingContent = {
                         Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {

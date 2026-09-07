@@ -24,7 +24,7 @@ import com.nada.kasir.core.data.local.entity.*
         SettingEntity::class,
         AuditLogEntity::class
     ],
-    version = 1,
+    version = 2, // v2: tambah nomorAntrian & namaPembeli di transactions
     exportSchema = false // aktifkan + set room.schemaLocation kalau nanti butuh migration history formal
 )
 @TypeConverters(Converters::class)

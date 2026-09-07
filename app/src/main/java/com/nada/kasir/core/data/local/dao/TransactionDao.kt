@@ -126,6 +126,11 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE status = 'COMPLETED' ORDER BY tanggalWaktu DESC LIMIT :limit")
     suspend fun getTransaksiTerbaru(limit: Int): List<TransactionEntity>
 
+
+    // === Nomor Antrian (reset otomatis tiap hari) ===
+    @Query("SELECT COUNT(*) FROM transactions WHERE tanggalWaktu BETWEEN :start AND :end")
+    suspend fun countSemuaTransaksiHariIni(start: Long, end: Long): Int
+
 }
 
 data class RingkasanMetodePembayaran(val metode: String, val total: Double, val jumlahTransaksi: Int)

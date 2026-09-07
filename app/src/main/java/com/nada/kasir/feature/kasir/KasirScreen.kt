@@ -54,6 +54,7 @@ fun KasirScreen(
 
     if (state.transaksiBerhasilId != null) {
         TransaksiBerhasilDialog(
+            nomorAntrian = state.nomorAntrianBerhasil,
             onTransaksiBaru = { viewModel.mulaiTransaksiBaru() },
             onCetak = { viewModel.tampilkanPreviewStruk(state.transaksiBerhasilId!!) },
             onBagikan = { /* TODO Phase 3: share struk via FileProvider */ }
@@ -163,9 +164,9 @@ fun KasirScreen(
         PembayaranDialog(
             total = state.total,
             onDismiss = { showPembayaranDialog = false },
-            onKonfirmasi = { metode, jumlahDiterima ->
+            onKonfirmasi = { metode, jumlahDiterima, namaPembeli ->
                 showPembayaranDialog = false
-                viewModel.bayar(currentUserId, metode, jumlahDiterima)
+                viewModel.bayar(currentUserId, metode, jumlahDiterima, namaPembeli)
             }
         )
     }
@@ -221,9 +222,10 @@ private fun RingkasanBaris(label: String, nilai: Double, tebal: Boolean = false)
 }
 
 @Composable
-private fun PembayaranDialog(total: Double, onDismiss: () -> Unit, onKonfirmasi: (MetodePembayaran, Double) -> Unit) {
+private fun PembayaranDialog(total: Double, onDismiss: () -> Unit, onKonfirmasi: (MetodePembayaran, Double, String?) -> Unit) {
     var metode by remember { mutableStateOf(MetodePembayaran.TUNAI) }
     var uangDiterimaText by remember { mutableStateOf("") }
+    var namaPembeli by remember { mutableStateOf("") }
     val uangDiterima = uangDiterimaText.toDoubleOrNull() ?: 0.0
     val kembalian = uangDiterima - total
 
@@ -233,6 +235,14 @@ private fun PembayaranDialog(total: Double, onDismiss: () -> Unit, onKonfirmasi:
         text = {
             Column {
                 Text("Total: ${CurrencyFormatter.format(total)}", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = namaPembeli,
+                    onValueChange = { namaPembeli = it },
+                    label = { Text("Nama Pembeli (opsional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(Modifier.height(8.dp))
                 MetodePembayaran.values().forEach { m ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -254,7 +264,7 @@ private fun PembayaranDialog(total: Double, onDismiss: () -> Unit, onKonfirmasi:
         confirmButton = {
             TextButton(onClick = {
                 val jumlah = if (metode == MetodePembayaran.TUNAI) uangDiterima else total
-                onKonfirmasi(metode, jumlah)
+                onKonfirmasi(metode, jumlah, namaPembeli.ifBlank { null })
             }) { Text("Konfirmasi") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
@@ -262,11 +272,20 @@ private fun PembayaranDialog(total: Double, onDismiss: () -> Unit, onKonfirmasi:
 }
 
 @Composable
-private fun TransaksiBerhasilDialog(onTransaksiBaru: () -> Unit, onCetak: () -> Unit, onBagikan: () -> Unit) {
+private fun TransaksiBerhasilDialog(nomorAntrian: Int?, onTransaksiBaru: () -> Unit, onCetak: () -> Unit, onBagikan: () -> Unit) {
     AlertDialog(
         onDismissRequest = {},
         title = { Text("TRANSAKSI BERHASIL") },
-        text = { Text("Transaksi telah tersimpan.") },
+        text = {
+            Column {
+                Text("Transaksi telah tersimpan.")
+                nomorAntrian?.let {
+                    Spacer(Modifier.height(12.dp))
+                    Text("Nomor Antrian", style = MaterialTheme.typography.labelMedium)
+                    Text("$it", style = MaterialTheme.typography.displaySmall)
+                }
+            }
+        },
         confirmButton = { TextButton(onClick = onTransaksiBaru) { Text("Transaksi Baru") } },
         dismissButton = {
             Row {

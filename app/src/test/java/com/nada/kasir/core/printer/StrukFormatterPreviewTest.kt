@@ -46,4 +46,30 @@ class StrukFormatterPreviewTest {
         val teks = StrukFormatter.buatStrukPreviewText(storeTanpaAlamat, transaksi, items, payment)
         assertFalse(teks.contains(store.alamat))
     }
+
+    @Test
+    fun `preview menampilkan nomor antrian jika diisi`() {
+        val transaksiDenganAntrian = transaksi.copy(nomorAntrian = 7)
+        val teks = StrukFormatter.buatStrukPreviewText(store, transaksiDenganAntrian, items, payment)
+        assertTrue(teks.contains("NO. ANTRIAN: 7"))
+    }
+
+    @Test
+    fun `preview tidak menampilkan baris nomor antrian jika nol (belum di-generate)`() {
+        val teks = StrukFormatter.buatStrukPreviewText(store, transaksi, items, payment) // nomorAntrian default 0
+        assertFalse(teks.contains("NO. ANTRIAN"))
+    }
+
+    @Test
+    fun `preview menampilkan nama pembeli jika diisi`() {
+        val transaksiDenganPembeli = transaksi.copy(namaPembeli = "Budi Santoso")
+        val teks = StrukFormatter.buatStrukPreviewText(store, transaksiDenganPembeli, items, payment)
+        assertTrue(teks.contains("Pembeli: Budi Santoso"))
+    }
+
+    @Test
+    fun `preview tidak menampilkan baris pembeli jika nama pembeli kosong`() {
+        val teks = StrukFormatter.buatStrukPreviewText(store, transaksi, items, payment) // namaPembeli null
+        assertFalse(teks.contains("Pembeli:"))
+    }
 }

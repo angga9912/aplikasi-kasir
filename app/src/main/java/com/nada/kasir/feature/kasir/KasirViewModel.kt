@@ -25,6 +25,7 @@ data class KasirUiState(
     val diskonTotal: Double = 0.0,
     val errorPesan: String? = null,
     val transaksiBerhasilId: Long? = null,
+    val nomorAntrianBerhasil: Int? = null,
     val isProsesBayar: Boolean = false,
     val previewStruk: String? = null,
     val sedangMencetak: Boolean = false
@@ -47,6 +48,7 @@ class KasirViewModel @Inject constructor(
     private val diskonFlow = MutableStateFlow(0.0)
     private val errorFlow = MutableStateFlow<String?>(null)
     private val transaksiBerhasilFlow = MutableStateFlow<Long?>(null)
+    private val nomorAntrianBerhasilFlow = MutableStateFlow<Int?>(null)
     private val prosesBayarFlow = MutableStateFlow(false)
     private val previewStrukFlow = MutableStateFlow<String?>(null)
     private val sedangMencetakFlow = MutableStateFlow(false)
@@ -59,7 +61,8 @@ class KasirViewModel @Inject constructor(
         transaksiBerhasilFlow,
         prosesBayarFlow,
         previewStrukFlow,
-        sedangMencetakFlow
+        sedangMencetakFlow,
+        nomorAntrianBerhasilFlow
     ) { flows ->
         @Suppress("UNCHECKED_CAST")
         KasirUiState(
@@ -70,7 +73,8 @@ class KasirViewModel @Inject constructor(
             transaksiBerhasilId = flows[4] as Long?,
             isProsesBayar = flows[5] as Boolean,
             previewStruk = flows[6] as String?,
-            sedangMencetak = flows[7] as Boolean
+            sedangMencetak = flows[7] as Boolean,
+            nomorAntrianBerhasil = flows[8] as Int?
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), KasirUiState())
 
@@ -134,7 +138,7 @@ class KasirViewModel @Inject constructor(
 
     fun setDiskonTotal(nilai: Double) { diskonFlow.value = nilai }
 
-    fun bayar(userId: Long, metode: MetodePembayaran, jumlahDiterima: Double) {
+    fun bayar(userId: Long, metode: MetodePembayaran, jumlahDiterima: Double, namaPembeli: String? = null) {
         viewModelScope.launch {
             prosesBayarFlow.value = true
             val result = transactionRepository.simpanTransaksiKasir(
@@ -142,12 +146,15 @@ class KasirViewModel @Inject constructor(
                 items = keranjangFlow.value,
                 diskonTotal = diskonFlow.value,
                 metode = metode,
-                jumlahDiterima = jumlahDiterima
+                jumlahDiterima = jumlahDiterima,
+                namaPembeli = namaPembeli
             )
             prosesBayarFlow.value = false
             when (result) {
                 is Result.Success -> {
                     transaksiBerhasilFlow.value = result.data
+                    val (transaksi, _, _) = transactionRepository.getDetail(result.data)
+                    nomorAntrianBerhasilFlow.value = transaksi?.nomorAntrian
                     keranjangFlow.value = emptyList()
                     diskonFlow.value = 0.0
                 }
@@ -160,6 +167,7 @@ class KasirViewModel @Inject constructor(
 
     fun mulaiTransaksiBaru() {
         transaksiBerhasilFlow.value = null
+        nomorAntrianBerhasilFlow.value = null
         keranjangFlow.value = emptyList()
         diskonFlow.value = 0.0
     }
