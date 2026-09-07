@@ -78,4 +78,64 @@ object StrukFormatter {
         builder.feedAndCut()
         return builder.build()
     }
+
+    /**
+     * Versi PREVIEW (teks biasa, tanpa perintah ESC/POS) untuk ditampilkan ke
+     * pengguna sebelum benar-benar mencetak. Layout dibuat semirip mungkin
+     * dengan hasil cetak fisik agar tidak ada kejutan di kertas struk asli.
+     */
+    fun buatStrukPreviewText(
+        store: StoreEntity,
+        transaction: TransactionEntity,
+        items: List<TransactionItemEntity>,
+        payment: PaymentEntity?
+    ): String {
+        val lebar = if (store.ukuranKertas == "80mm") 48 else 32
+        val sdfTanggal = SimpleDateFormat("dd/MM/yyyy", Locale("id", "ID"))
+        val sdfJam = SimpleDateFormat("HH:mm", Locale("id", "ID"))
+        val tanggalTransaksi = Date(transaction.tanggalWaktu)
+        val sb = StringBuilder()
+
+        fun tengah(teks: String) {
+            val sisa = (lebar - teks.length).coerceAtLeast(0)
+            sb.append(" ".repeat(sisa / 2)).append(teks).append('\n')
+        }
+        fun garis() { sb.append("-".repeat(lebar)).append('\n') }
+        fun kiriKanan(kiri: String, kanan: String) {
+            val sisa = (lebar - kiri.length - kanan.length).coerceAtLeast(1)
+            sb.append(kiri).append(" ".repeat(sisa)).append(kanan).append('\n')
+        }
+
+        tengah(if (store.tampilkanLogoStruk) "[ ${store.nama} ]" else store.nama)
+        if (store.tampilkanAlamatStruk && store.alamat.isNotBlank()) tengah(store.alamat)
+        if (store.tampilkanWaStruk && store.whatsapp.isNotBlank()) tengah("WA: ${store.whatsapp}")
+        garis()
+
+        sb.append("No: ${transaction.noTransaksi}\n")
+        sb.append("Tanggal: ${sdfTanggal.format(tanggalTransaksi)}\n")
+        sb.append("Jam: ${sdfJam.format(tanggalTransaksi)}\n")
+        garis()
+
+        items.forEach { item ->
+            sb.append(item.namaProdukSnapshot).append('\n')
+            val kiri = "${item.qty} x ${CurrencyFormatter.format(item.harga).removePrefix(store.mataUang).trim()}"
+            val kanan = CurrencyFormatter.format(item.subtotal).removePrefix(store.mataUang).trim()
+            kiriKanan(kiri, kanan)
+        }
+        garis()
+
+        if (store.tampilkanDiskonStruk && transaction.diskon > 0) {
+            kiriKanan("DISKON", CurrencyFormatter.format(transaction.diskon))
+        }
+        kiriKanan("TOTAL", CurrencyFormatter.format(transaction.total))
+        payment?.let {
+            kiriKanan(it.metode.name, CurrencyFormatter.format(it.jumlahDiterima))
+            if (it.kembalian > 0) kiriKanan("KEMBALI", CurrencyFormatter.format(it.kembalian))
+        }
+        garis()
+
+        if (store.footerStruk.isNotBlank()) tengah(store.footerStruk)
+
+        return sb.toString()
+    }
 }

@@ -24,6 +24,12 @@ class RiwayatViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val queryFlow = MutableStateFlow("")
+    private val previewStrukFlow = MutableStateFlow<String?>(null)
+    private val transaksiIdPreviewFlow = MutableStateFlow<Long?>(null)
+    private val sedangMencetakFlow = MutableStateFlow(false)
+
+    val previewStruk: StateFlow<String?> = previewStrukFlow
+    val sedangMencetak: StateFlow<Boolean> = sedangMencetakFlow
 
     // Default: filter hari ini. Filter tanggal custom bisa ditambahkan di UI (poin 13).
     val riwayat: StateFlow<List<TransactionEntity>> = queryFlow.flatMapLatest { q ->
@@ -45,22 +51,47 @@ class RiwayatViewModel @Inject constructor(
         }
     }
 
-    /** Cetak Ulang struk dari riwayat (poin 13). */
-    fun cetakUlang(transactionId: Long, onError: (String) -> Unit) {
+    /** Tampilkan PREVIEW dulu sebelum Cetak Ulang benar-benar dikirim ke printer (poin 13). */
+    fun tampilkanPreviewCetakUlang(transactionId: Long, onError: (String) -> Unit) {
         viewModelScope.launch {
+            val store = storeRepository.getOrCreateDefault()
+            val (transaksi, items, payment) = transactionRepository.getDetail(transactionId)
+            if (transaksi == null) { onError("Transaksi tidak ditemukan."); return@launch }
+            transaksiIdPreviewFlow.value = transactionId
+            previewStrukFlow.value = StrukFormatter.buatStrukPreviewText(store, transaksi, items, payment)
+        }
+    }
+
+    fun tutupPreviewStruk() {
+        previewStrukFlow.value = null
+        transaksiIdPreviewFlow.value = null
+    }
+
+    /** Dipanggil dari dialog preview saat pengguna menekan "Cetak Sekarang". */
+    fun cetakDariPreview(onError: (String) -> Unit) {
+        val transactionId = transaksiIdPreviewFlow.value ?: return
+        viewModelScope.launch {
+            sedangMencetakFlow.value = true
             val printerDefault = printerRepository.getDefault()
             if (printerDefault == null) {
+                sedangMencetakFlow.value = false
+                tutupPreviewStruk()
                 onError("Belum ada printer default. Atur di menu Pengaturan Printer.")
                 return@launch
             }
             val store = storeRepository.getOrCreateDefault()
             val (transaksi, items, payment) = transactionRepository.getDetail(transactionId)
-            if (transaksi == null) { onError("Transaksi tidak ditemukan."); return@launch }
-            val struk = StrukFormatter.buatStruk(store, transaksi, items, payment)
-            when (val result = bluetoothPrinterManager.cetak(printerDefault.macAddress, struk)) {
-                is Result.Failure -> onError(result.error.pesan)
-                is Result.Success -> Unit
+            if (transaksi == null) {
+                sedangMencetakFlow.value = false
+                tutupPreviewStruk()
+                onError("Transaksi tidak ditemukan.")
+                return@launch
             }
+            val struk = StrukFormatter.buatStruk(store, transaksi, items, payment)
+            val result = bluetoothPrinterManager.cetak(printerDefault.macAddress, struk)
+            sedangMencetakFlow.value = false
+            tutupPreviewStruk()
+            if (result is Result.Failure) onError(result.error.pesan)
         }
     }
 }

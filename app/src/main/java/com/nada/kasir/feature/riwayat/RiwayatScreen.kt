@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nada.kasir.core.data.local.entity.TransactionStatus
 import com.nada.kasir.core.util.CurrencyFormatter
+import com.nada.kasir.feature.struk.StrukPreviewDialog
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -17,6 +18,8 @@ import java.util.*
 @Composable
 fun RiwayatScreen(isAdmin: Boolean = true, viewModel: RiwayatViewModel = hiltViewModel()) {
     val riwayat by viewModel.riwayat.collectAsState()
+    val previewStruk by viewModel.previewStruk.collectAsState()
+    val sedangMencetak by viewModel.sedangMencetak.collectAsState()
     var konfirmasiBatalId by remember { mutableStateOf<Long?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     val sdf = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("id", "ID")) }
@@ -36,7 +39,9 @@ fun RiwayatScreen(isAdmin: Boolean = true, viewModel: RiwayatViewModel = hiltVie
                                 Text("DIBATALKAN", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                             } else {
                                 Row {
-                                    TextButton(onClick = { viewModel.cetakUlang(trx.id) { pesan -> errorMsg = pesan } }) { Text("Cetak Ulang") }
+                                    TextButton(onClick = {
+                                        viewModel.tampilkanPreviewCetakUlang(trx.id) { pesan -> errorMsg = pesan }
+                                    }) { Text("Cetak Ulang") }
                                     if (isAdmin) {
                                         TextButton(onClick = { konfirmasiBatalId = trx.id }) { Text("Batalkan") }
                                     }
@@ -48,6 +53,15 @@ fun RiwayatScreen(isAdmin: Boolean = true, viewModel: RiwayatViewModel = hiltVie
                 Divider()
             }
         }
+    }
+
+    previewStruk?.let { teks ->
+        StrukPreviewDialog(
+            teksStruk = teks,
+            sedangMencetak = sedangMencetak,
+            onCetak = { viewModel.cetakDariPreview { pesan -> errorMsg = pesan } },
+            onTutup = { viewModel.tutupPreviewStruk() }
+        )
     }
 
     // Pembatalan transaksi WAJIB konfirmasi (poin 13)

@@ -25,7 +25,9 @@ data class KasirUiState(
     val diskonTotal: Double = 0.0,
     val errorPesan: String? = null,
     val transaksiBerhasilId: Long? = null,
-    val isProsesBayar: Boolean = false
+    val isProsesBayar: Boolean = false,
+    val previewStruk: String? = null,
+    val sedangMencetak: Boolean = false
 ) {
     val subtotal: Double get() = keranjang.sumOf { it.harga * it.qty }
     val total: Double get() = subtotal - diskonTotal
@@ -46,6 +48,8 @@ class KasirViewModel @Inject constructor(
     private val errorFlow = MutableStateFlow<String?>(null)
     private val transaksiBerhasilFlow = MutableStateFlow<Long?>(null)
     private val prosesBayarFlow = MutableStateFlow(false)
+    private val previewStrukFlow = MutableStateFlow<String?>(null)
+    private val sedangMencetakFlow = MutableStateFlow(false)
 
     val uiState: StateFlow<KasirUiState> = combine(
         queryFlow.flatMapLatest { q -> if (q.isBlank()) productRepository.observeActive() else productRepository.search(q) },
@@ -53,7 +57,9 @@ class KasirViewModel @Inject constructor(
         diskonFlow,
         errorFlow,
         transaksiBerhasilFlow,
-        prosesBayarFlow
+        prosesBayarFlow,
+        previewStrukFlow,
+        sedangMencetakFlow
     ) { flows ->
         @Suppress("UNCHECKED_CAST")
         KasirUiState(
@@ -62,9 +68,11 @@ class KasirViewModel @Inject constructor(
             diskonTotal = flows[2] as Double,
             errorPesan = flows[3] as String?,
             transaksiBerhasilId = flows[4] as Long?,
-            isProsesBayar = flows[5] as Boolean
+            isProsesBayar = flows[5] as Boolean,
+            previewStruk = flows[6] as String?,
+            sedangMencetak = flows[7] as Boolean
         )
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), KasirUiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), KasirUiState())
 
     fun onQueryChange(q: String) { queryFlow.value = q }
 
@@ -156,25 +164,48 @@ class KasirViewModel @Inject constructor(
         diskonFlow.value = 0.0
     }
 
-    /** Cetak struk transaksi (poin 8 & 9). Kegagalan printer tidak mengubah data transaksi. */
-    fun cetakStruk(transactionId: Long) {
+    /**
+     * Tampilkan PREVIEW struk dulu sebelum benar-benar mencetak. Tidak menyentuh
+     * printer sama sekali di langkah ini - murni menyusun teks dari data toko & transaksi.
+     */
+    fun tampilkanPreviewStruk(transactionId: Long) {
         viewModelScope.launch {
-            val printerDefault = printerRepository.getDefault()
-            if (printerDefault == null) {
-                errorFlow.value = "Belum ada printer default. Atur di menu Pengaturan Printer."
-                return@launch
-            }
             val store = storeRepository.getOrCreateDefault()
             val (transaksi, items, payment) = transactionRepository.getDetail(transactionId)
             if (transaksi == null) {
                 errorFlow.value = AppError.TransaksiGagalDisimpan.pesan
                 return@launch
             }
-            val strukBytes = StrukFormatter.buatStruk(store, transaksi, items, payment)
-            when (val result = bluetoothPrinterManager.cetak(printerDefault.macAddress, strukBytes)) {
-                is Result.Success -> Unit // sunyi, printer langsung mencetak
-                is Result.Failure -> errorFlow.value = result.error.pesan
+            previewStrukFlow.value = StrukFormatter.buatStrukPreviewText(store, transaksi, items, payment)
+        }
+    }
+
+    fun tutupPreviewStruk() { previewStrukFlow.value = null }
+
+    /** Dipanggil dari dialog preview saat pengguna menekan "Cetak Sekarang" (poin 8 & 9). */
+    fun cetakDariPreview(transactionId: Long) {
+        viewModelScope.launch {
+            sedangMencetakFlow.value = true
+            val printerDefault = printerRepository.getDefault()
+            if (printerDefault == null) {
+                sedangMencetakFlow.value = false
+                previewStrukFlow.value = null
+                errorFlow.value = "Belum ada printer default. Atur di menu Pengaturan Printer."
+                return@launch
             }
+            val store = storeRepository.getOrCreateDefault()
+            val (transaksi, items, payment) = transactionRepository.getDetail(transactionId)
+            if (transaksi == null) {
+                sedangMencetakFlow.value = false
+                previewStrukFlow.value = null
+                errorFlow.value = AppError.TransaksiGagalDisimpan.pesan
+                return@launch
+            }
+            val strukBytes = StrukFormatter.buatStruk(store, transaksi, items, payment)
+            val result = bluetoothPrinterManager.cetak(printerDefault.macAddress, strukBytes)
+            sedangMencetakFlow.value = false
+            previewStrukFlow.value = null
+            if (result is Result.Failure) errorFlow.value = result.error.pesan
         }
     }
 

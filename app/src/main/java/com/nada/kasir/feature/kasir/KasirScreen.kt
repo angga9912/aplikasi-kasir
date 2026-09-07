@@ -18,6 +18,7 @@ import com.nada.kasir.core.data.local.entity.MetodePembayaran
 import com.nada.kasir.core.util.CurrencyFormatter
 import com.nada.kasir.core.util.HandheldScannerDetector
 import com.nada.kasir.feature.kasir.barcode.BarcodeScannerScreen
+import com.nada.kasir.feature.struk.StrukPreviewDialog
 
 /**
  * Halaman Kasir - fitur utama aplikasi (poin 4).
@@ -54,9 +55,17 @@ fun KasirScreen(
     if (state.transaksiBerhasilId != null) {
         TransaksiBerhasilDialog(
             onTransaksiBaru = { viewModel.mulaiTransaksiBaru() },
-            onCetak = { viewModel.cetakStruk(state.transaksiBerhasilId!!) },
+            onCetak = { viewModel.tampilkanPreviewStruk(state.transaksiBerhasilId!!) },
             onBagikan = { /* TODO Phase 3: share struk via FileProvider */ }
         )
+        state.previewStruk?.let { teks ->
+            StrukPreviewDialog(
+                teksStruk = teks,
+                sedangMencetak = state.sedangMencetak,
+                onCetak = { viewModel.cetakDariPreview(state.transaksiBerhasilId!!) },
+                onTutup = { viewModel.tutupPreviewStruk() }
+            )
+        }
         return
     }
 
