@@ -99,7 +99,7 @@ private fun BarisPengaturan(item: ItemPengaturan, warna: Color = MaterialTheme.c
                 Text(item.subjudul, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(
-                Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null,
+                Icons.Filled.ChevronRight, contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
         }
