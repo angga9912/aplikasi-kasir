@@ -3,7 +3,50 @@
 Aplikasi kasir Android yang dapat dikustomisasi per toko/UMKM. Dibangun dengan
 Kotlin + Jetpack Compose + Room (MVVM + Repository, offline-first).
 
-## Status: REDESIGN UI — Home/Dashboard (selesai — siap diuji)
+## Status: STRUKTUR PAKET BASIC / CUSTOM / PRO (selesai — siap diuji)
+
+Satu source code sekarang bisa melayani 3 tingkat paket komersial (poin 29 brief
+awal), diatur lewat 1 dropdown di **Pengaturan Toko** (Admin) — tanpa perlu
+build APK terpisah per paket.
+
+| Fitur | Basic | Custom | Pro |
+|---|---|---|---|
+| Kasir, Barcode, Printer, Cetak Struk + Preview | ✅ | ✅ | ✅ |
+| Produk, Stok, Riwayat Transaksi | ✅ | ✅ | ✅ |
+| Custom Warna Aplikasi (Branding) | ❌ | ✅ | ✅ |
+| Import/Export Excel | ❌ | ✅ | ✅ |
+| Laporan (Harian/Bulanan/Stok) | ❌ | ✅ | ✅ |
+| Backup & Restore Data | ❌ | ✅ | ✅ |
+| Manajemen Pengguna (Multi User Admin/Kasir) | ❌ | ❌ | ✅ |
+
+- ✅ `PaketAplikasi` (enum BASIC/CUSTOM/PRO) + `PaketRepository` — disimpan di
+  tabel `settings` yang sudah ada (mekanisme sama seperti feature flags poin 22).
+- ✅ Pemilih paket di Pengaturan Toko, langsung menyembunyikan/menampilkan menu
+  terkait di Dashboard, Produk, dan Pengaturan tanpa perlu restart aplikasi.
+- ✅ Default paket = **PRO** (supaya instalasi yang sudah ada, termasuk yang
+  sedang Anda uji, tidak kehilangan menu tiba-tiba) — ganti manual ke Basic/Custom
+  saat deploy ke pelanggan sesuai paket yang mereka beli.
+- 🔜 Slot **Pro** sudah disiapkan untuk fitur Phase 5 mendatang (Hutang/Piutang,
+  Supplier, Multi Cabang) tanpa perlu restrukturisasi lagi.
+
+
+
+Ditambahkan atas permintaan: struk ditampilkan dulu sebagai preview teks
+sebelum benar-benar dikirim ke printer.
+
+- ✅ `StrukFormatter.buatStrukPreviewText()` — versi teks biasa (bukan ESC/POS)
+  dari struk, layout dibuat semirip mungkin dengan hasil cetak fisik (font
+  monospace, lebar kolom mengikuti ukuran kertas 58mm/80mm).
+- ✅ `StrukPreviewDialog` — dialog full-height menampilkan preview, tombol
+  "Cetak Sekarang" (baru mengirim ke printer di sini) dan "Tutup" (batal cetak).
+- ✅ Berlaku di DUA alur: setelah transaksi selesai di Kasir, dan "Cetak Ulang"
+  dari Riwayat Transaksi.
+- ✅ Kegagalan printer tetap tidak memengaruhi data transaksi (perilaku lama
+  tidak berubah, hanya menambah langkah konfirmasi visual sebelum cetak).
+- ✅ Unit test baru: `StrukFormatterPreviewTest` (memastikan preview memuat info
+  yang benar dan tidak pernah menampilkan harga beli).
+
+
 
 Redesign "Modern Minimalist POS Dashboard" untuk layar Home, TANPA mengubah
 business logic/database/navigasi fungsional (hanya cara menyusun & menampilkan
