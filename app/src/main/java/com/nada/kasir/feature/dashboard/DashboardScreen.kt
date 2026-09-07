@@ -64,7 +64,7 @@ fun DashboardScreen(
         item { Spacer(Modifier.height(20.dp)) }
         item { PrimaryActionCard(onClick = onBukaKasir) }
         item { Spacer(Modifier.height(24.dp)) }
-        item { MenuUtamaSection(isAdmin, onBukaProduk, onBukaRiwayat, onBukaLaporan) }
+        item { MenuUtamaSection(isAdmin, state.paketAktif, onBukaProduk, onBukaRiwayat, onBukaLaporan) }
         item { Spacer(Modifier.height(24.dp)) }
         item { PerhatianStokSection(state.stokMenipis, state.stokHabis, onLihatProduk = onBukaProduk) }
         item { Spacer(Modifier.height(24.dp)) }
@@ -204,7 +204,12 @@ private fun PrimaryActionCard(onClick: () -> Unit) {
 }
 
 @Composable
-private fun MenuUtamaSection(isAdmin: Boolean, onBukaProduk: () -> Unit, onBukaRiwayat: () -> Unit, onBukaLaporan: () -> Unit) {
+private fun MenuUtamaSection(
+    isAdmin: Boolean,
+    paketAktif: com.nada.kasir.core.paket.PaketAplikasi,
+    onBukaProduk: () -> Unit, onBukaRiwayat: () -> Unit, onBukaLaporan: () -> Unit
+) {
+    val bisaLaporan = isAdmin && paketAktif.mencakup(com.nada.kasir.core.paket.PaketAplikasi.CUSTOM)
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
         Text("Menu Utama", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
         Spacer(Modifier.height(12.dp))
@@ -212,7 +217,7 @@ private fun MenuUtamaSection(isAdmin: Boolean, onBukaProduk: () -> Unit, onBukaR
             ItemMenuUtama(Modifier.weight(1f), Icons.Filled.Inventory2, if (isAdmin) "Produk" else "Lihat Produk", onBukaProduk)
             ItemMenuUtama(Modifier.weight(1f), Icons.Filled.ReceiptLong, "Riwayat", onBukaRiwayat)
         }
-        if (isAdmin) {
+        if (bisaLaporan) {
             Spacer(Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ItemMenuUtama(Modifier.weight(1f), Icons.Filled.Assessment, "Laporan", onBukaLaporan)

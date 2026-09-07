@@ -29,14 +29,16 @@ data class DashboardUiState(
     val stokHabis: Int = 0,
     val store: StoreEntity? = null,
     val transaksiTerbaru: List<TransaksiTerbaruTampilan> = emptyList(),
-    val sedangMemuatTransaksiTerbaru: Boolean = true
+    val sedangMemuatTransaksiTerbaru: Boolean = true,
+    val paketAktif: com.nada.kasir.core.paket.PaketAplikasi = com.nada.kasir.core.paket.PaketAplikasi.PRO
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val productRepository: ProductRepository,
-    private val storeRepository: StoreRepository
+    private val storeRepository: StoreRepository,
+    private val paketRepository: com.nada.kasir.core.paket.PaketRepository
 ) : ViewModel() {
 
     private val cal = Calendar.getInstance().apply {
@@ -55,7 +57,8 @@ class DashboardViewModel @Inject constructor(
         productRepository.observeStokHabis(),
         storeRepository.observeStore(),
         transaksiTerbaruFlow,
-        sedangMemuatFlow
+        sedangMemuatFlow,
+        paketRepository.observePaketAktif()
     ) { flows ->
         DashboardUiState(
             penjualanHariIni = flows[0] as Double,
@@ -64,7 +67,8 @@ class DashboardViewModel @Inject constructor(
             stokHabis = (flows[3] as List<*>).size,
             store = flows[4] as StoreEntity?,
             transaksiTerbaru = flows[5] as List<TransaksiTerbaruTampilan>,
-            sedangMemuatTransaksiTerbaru = flows[6] as Boolean
+            sedangMemuatTransaksiTerbaru = flows[6] as Boolean,
+            paketAktif = flows[7] as com.nada.kasir.core.paket.PaketAplikasi
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 

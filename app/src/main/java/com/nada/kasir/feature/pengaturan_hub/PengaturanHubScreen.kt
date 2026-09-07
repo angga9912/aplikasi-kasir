@@ -10,12 +10,16 @@ import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.nada.kasir.core.paket.PaketAplikasi
 
 private data class ItemPengaturan(
     val judul: String, val subjudul: String, val ikon: ImageVector, val onClick: () -> Unit
@@ -32,14 +36,21 @@ fun PengaturanHubScreen(
     onBukaPengaturanToko: () -> Unit,
     onBukaPengguna: () -> Unit,
     onBukaBackup: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    viewModel: PengaturanHubViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
-    val itemAdmin = listOf(
-        ItemPengaturan("Pengaturan Printer", "Kelola printer thermal Bluetooth", Icons.Filled.Print, onBukaPengaturanPrinter),
-        ItemPengaturan("Pengaturan Toko", "Identitas toko, struk, dan warna aplikasi", Icons.Filled.Storefront, onBukaPengaturanToko),
-        ItemPengaturan("Manajemen Pengguna", "Kelola akun admin dan kasir", Icons.Filled.Group, onBukaPengguna),
-        ItemPengaturan("Backup & Restore Data", "Cadangkan atau pulihkan seluruh data", Icons.Filled.CloudUpload, onBukaBackup)
-    )
+    val paketAktif by viewModel.paketAktif.collectAsState()
+
+    val itemAdmin = buildList {
+        add(ItemPengaturan("Pengaturan Printer", "Kelola printer thermal Bluetooth", Icons.Filled.Print, onBukaPengaturanPrinter))
+        add(ItemPengaturan("Pengaturan Toko", "Identitas toko, struk, dan warna aplikasi", Icons.Filled.Storefront, onBukaPengaturanToko))
+        if (paketAktif.mencakup(PaketAplikasi.PRO)) {
+            add(ItemPengaturan("Manajemen Pengguna", "Kelola akun admin dan kasir", Icons.Filled.Group, onBukaPengguna))
+        }
+        if (paketAktif.mencakup(PaketAplikasi.CUSTOM)) {
+            add(ItemPengaturan("Backup & Restore Data", "Cadangkan atau pulihkan seluruh data", Icons.Filled.CloudUpload, onBukaBackup))
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,11 +18,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nada.kasir.branding.ThemeConfig
 import com.nada.kasir.core.data.local.entity.StoreEntity
+import com.nada.kasir.core.paket.PaketAplikasi
 
 /** PENGATURAN TOKO (poin 1) + branding warna (poin 2) + custom struk (poin 10). */
 @Composable
 fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
     val storeDb by viewModel.store.collectAsState()
+    val paketAktif by viewModel.paketAktif.collectAsState()
     var tersimpanPesan by remember { mutableStateOf(false) }
 
     // State form lokal, diisi dari data toko begitu tersedia
@@ -57,6 +60,31 @@ fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
         Text("Pengaturan Toko", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
 
+        // Pemilihan paket komersial (poin 29 brief awal) - satu source code, 3 tingkat fitur.
+        Text("Paket Aplikasi", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Menentukan menu yang tersedia di aplikasi ini sesuai paket yang dibeli pelanggan.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(8.dp))
+        PaketAplikasi.values().forEach { paket ->
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { viewModel.ubahPaket(paket) }.padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(selected = paketAktif == paket, onClick = { viewModel.ubahPaket(paket) })
+                Column {
+                    Text(paket.label, style = MaterialTheme.typography.bodyMedium)
+                    Text(paket.deskripsi, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+        Divider()
+        Spacer(Modifier.height(16.dp))
+
         OutlinedTextField(nama, { nama = it }, label = { Text("Nama Toko") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(alamat, { alamat = it }, label = { Text("Alamat") }, modifier = Modifier.fillMaxWidth())
@@ -84,19 +112,30 @@ fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-        Text("Warna Utama Aplikasi", style = MaterialTheme.typography.titleMedium)
-        Row {
-            ThemeConfig.PRESET_WARNA.forEach { (hex, _) ->
-                val warna = try { Color(("FF" + hex.removePrefix("#")).toLong(16)) } catch (e: Exception) { Color.Gray }
-                Box(
-                    modifier = Modifier
-                        .padding(end = 8.dp)
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(warna)
-                        .border(width = if (warnaUtama == hex) 3.dp else 0.dp, color = Color.Black, shape = CircleShape)
-                        .clickable { warnaUtama = hex }
+        if (paketAktif.mencakup(PaketAplikasi.CUSTOM)) {
+            Spacer(Modifier.height(16.dp))
+            Text("Warna Utama Aplikasi", style = MaterialTheme.typography.titleMedium)
+            Row {
+                ThemeConfig.PRESET_WARNA.forEach { (hex, _) ->
+                    val warna = try { Color(("FF" + hex.removePrefix("#")).toLong(16)) } catch (e: Exception) { Color.Gray }
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(warna)
+                            .border(width = if (warnaUtama == hex) 3.dp else 0.dp, color = Color.Black, shape = CircleShape)
+                            .clickable { warnaUtama = hex }
+                    )
+                }
+            }
+        } else {
+            Spacer(Modifier.height(16.dp))
+            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Custom warna aplikasi tersedia di paket Custom & Pro.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(12.dp)
                 )
             }
         }

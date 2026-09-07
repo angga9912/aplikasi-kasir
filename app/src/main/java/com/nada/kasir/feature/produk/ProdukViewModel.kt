@@ -9,6 +9,8 @@ import com.nada.kasir.core.data.repository.ProductRepository
 import com.nada.kasir.core.excel.ExcelExporter
 import com.nada.kasir.core.excel.ExcelImporter
 import com.nada.kasir.core.excel.ImportProdukResult
+import com.nada.kasir.core.paket.PaketAplikasi
+import com.nada.kasir.core.paket.PaketRepository
 import com.nada.kasir.core.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -24,11 +26,15 @@ import javax.inject.Inject
 @HiltViewModel
 class ProdukViewModel @Inject constructor(
     private val productRepository: ProductRepository,
+    private val paketRepository: PaketRepository,
     @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     val daftarProduk: StateFlow<List<ProductEntity>> = productRepository.observeActive()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val paketAktif: StateFlow<PaketAplikasi> = paketRepository.observePaketAktif()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaketAplikasi.PRO)
 
     private val _pesanImportExport = MutableStateFlow<String?>(null)
     val pesanImportExport: StateFlow<String?> = _pesanImportExport

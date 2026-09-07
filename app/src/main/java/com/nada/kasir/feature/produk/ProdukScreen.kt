@@ -21,6 +21,7 @@ import com.nada.kasir.core.util.FileShareHelper
 @Composable
 fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewModel()) {
     val produkList by viewModel.daftarProduk.collectAsState()
+    val paketAktif by viewModel.paketAktif.collectAsState()
     val pesanImportExport by viewModel.pesanImportExport.collectAsState()
     val fileExportTerakhir by viewModel.fileExportTerakhir.collectAsState()
     var showForm by remember { mutableStateOf(false) }
@@ -42,7 +43,7 @@ fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewM
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (isAdmin) {
+            if (isAdmin && paketAktif.mencakup(com.nada.kasir.core.paket.PaketAplikasi.CUSTOM)) {
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                     OutlinedButton(
                         onClick = {
