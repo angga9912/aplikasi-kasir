@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +23,10 @@ import com.nada.kasir.feature.struk.StrukPreviewDialog
 
 /**
  * Halaman Kasir - fitur utama aplikasi (poin 4).
- * Layout: kiri = pencarian & grid produk, kanan/bawah = keranjang + tombol BAYAR besar.
+ * Layout mobile-first: grid produk full-width di atas, keranjang sebagai
+ * bottom bar ringkas (selalu terlihat) yang bisa di-expand jadi bottom sheet
+ * penuh saat disentuh - supaya nama produk & qty selalu jelas terbaca saat
+ * kasir/pembeli merevisi pesanan, tidak terpotong seperti layout kolom sempit.
  */
 @Composable
 fun KasirScreen(
@@ -32,6 +36,7 @@ fun KasirScreen(
     val state by viewModel.uiState.collectAsState()
     var showPembayaranDialog by remember { mutableStateOf(false) }
     var showBarcodeScanner by remember { mutableStateOf(false) }
+    var showKeranjangSheet by remember { mutableStateOf(false) }
 
     // Buffer untuk membedakan ketikan scanner fisik (handheld) vs ketikan manual kasir (poin 5, Phase 2)
     val handheldDetector = remember {
@@ -79,9 +84,13 @@ fun KasirScreen(
         )
     }
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        // Kolom kiri: pencarian & daftar produk
-        Column(modifier = Modifier.weight(1.4f).padding(12.dp)) {
+    val jumlahDiKeranjang: (Long) -> Int = { productId ->
+        state.keranjang.firstOrNull { it.productId == productId }?.qty ?: 0
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Area produk - full width, tidak lagi berbagi lebar dengan panel keranjang
+        Column(modifier = Modifier.weight(1f).padding(12.dp)) {
             OutlinedTextField(
                 value = state.query,
                 onValueChange = { teksBaru ->
@@ -107,57 +116,48 @@ fun KasirScreen(
             )
             Spacer(Modifier.height(8.dp))
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 140.dp),
+                columns = GridCells.Adaptive(minSize = 150.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
             ) {
                 items(state.produk) { produk ->
                     ProdukKasirCard(
                         nama = produk.nama,
                         harga = produk.hargaJual,
                         stok = produk.stok,
+                        jumlahDiKeranjang = jumlahDiKeranjang(produk.id),
                         onClick = { viewModel.tambahKeKeranjang(produk) }
                     )
                 }
             }
         }
 
-        // Kolom kanan: keranjang & pembayaran
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .padding(12.dp)
-        ) {
-            Text("Keranjang", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(state.keranjang) { item ->
-                    KeranjangRow(
-                        nama = item.nama,
-                        qty = item.qty,
-                        harga = item.harga,
-                        subtotal = item.subtotal,
-                        onQtyChange = { qtyBaru -> viewModel.ubahQty(item.productId, qtyBaru) }
-                    )
-                    Divider()
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
-            RingkasanBaris("Subtotal", state.subtotal)
-            RingkasanBaris("Diskon", state.diskonTotal)
-            RingkasanBaris("Total", state.total, tebal = true)
-
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = { showPembayaranDialog = true },
-                enabled = state.keranjang.isNotEmpty() && !state.isProsesBayar,
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) {
-                Text(if (state.isProsesBayar) "Memproses..." else "BAYAR", style = MaterialTheme.typography.titleMedium)
-            }
+        // Bar keranjang ringkas - SELALU terlihat di bawah, tidak pernah membuat nama produk
+        // di keranjang tersembunyi/terpotong. Disentuh untuk lihat & revisi detail pesanan.
+        if (state.keranjang.isNotEmpty()) {
+            KeranjangBarRingkas(
+                jumlahItem = state.keranjang.sumOf { it.qty },
+                total = state.total,
+                onClick = { showKeranjangSheet = true }
+            )
         }
+    }
+
+    if (showKeranjangSheet) {
+        KeranjangBottomSheet(
+            keranjang = state.keranjang,
+            subtotal = state.subtotal,
+            diskonTotal = state.diskonTotal,
+            total = state.total,
+            isProsesBayar = state.isProsesBayar,
+            onUbahQty = viewModel::ubahQty,
+            onTutup = { showKeranjangSheet = false },
+            onBayar = {
+                showKeranjangSheet = false
+                showPembayaranDialog = true
+            }
+        )
     }
 
     if (showPembayaranDialog) {
@@ -173,13 +173,121 @@ fun KasirScreen(
 }
 
 @Composable
-private fun ProdukKasirCard(nama: String, harga: Double, stok: Int, onClick: () -> Unit) {
+private fun ProdukKasirCard(nama: String, harga: Double, stok: Int, jumlahDiKeranjang: Int, onClick: () -> Unit) {
     ElevatedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(10.dp)) {
-            Text(nama, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+            Text(nama, style = MaterialTheme.typography.bodyMedium, maxLines = 2, minLines = 2)
             Spacer(Modifier.height(4.dp))
             Text(CurrencyFormatter.format(harga), style = MaterialTheme.typography.bodyLarge)
             Text("Stok: $stok", style = MaterialTheme.typography.labelSmall)
+            if (jumlahDiKeranjang > 0) {
+                Spacer(Modifier.height(6.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        "Di keranjang: $jumlahDiKeranjang",
+                        color = androidx.compose.ui.graphics.Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Bar ringkas selalu terlihat di bagian bawah layar Kasir - tap untuk buka detail keranjang. */
+@Composable
+private fun KeranjangBarRingkas(jumlahItem: Int, total: Double, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.primary,
+        tonalElevation = 4.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    "$jumlahItem item di keranjang",
+                    color = androidx.compose.ui.graphics.Color.White,
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Text(
+                    CurrencyFormatter.format(total),
+                    color = androidx.compose.ui.graphics.Color.White,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Lihat Keranjang", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.bodyMedium)
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = androidx.compose.ui.graphics.Color.White
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Bottom sheet keranjang - full width, jadi nama produk & kontrol qty selalu
+ * jelas terbaca. Di sinilah pembeli/kasir merevisi pesanan (ubah qty, hapus item).
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun KeranjangBottomSheet(
+    keranjang: List<com.nada.kasir.core.domain.model.KeranjangItem>,
+    subtotal: Double,
+    diskonTotal: Double,
+    total: Double,
+    isProsesBayar: Boolean,
+    onUbahQty: (Long, Int) -> Unit,
+    onTutup: () -> Unit,
+    onBayar: () -> Unit
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onTutup, sheetState = sheetState) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Text("Keranjang (${keranjang.sumOf { it.qty }} item)", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+
+            Column(modifier = Modifier.heightIn(max = 360.dp)) {
+                LazyColumn {
+                    items(keranjang, key = { it.productId }) { item ->
+                        KeranjangRow(
+                            nama = item.nama,
+                            qty = item.qty,
+                            harga = item.harga,
+                            subtotal = item.subtotal,
+                            onQtyChange = { qtyBaru -> onUbahQty(item.productId, qtyBaru) }
+                        )
+                        Divider()
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            RingkasanBaris("Subtotal", subtotal)
+            RingkasanBaris("Diskon", diskonTotal)
+            Divider(modifier = Modifier.padding(vertical = 6.dp))
+            RingkasanBaris("Total", total, tebal = true)
+
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onBayar,
+                enabled = keranjang.isNotEmpty() && !isProsesBayar,
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Text(if (isProsesBayar) "Memproses..." else "BAYAR", style = MaterialTheme.typography.titleMedium)
+            }
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
