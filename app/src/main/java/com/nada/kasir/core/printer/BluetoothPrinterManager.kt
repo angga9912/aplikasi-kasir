@@ -78,7 +78,7 @@ class BluetoothPrinterManager @Inject constructor(
             .bold(true)
             .textLine("TEST PRINT")
             .bold(false)
-            .textLine("NADA KASIR CUSTOM")
+            .textLine("NADA POS")
             .garis(lebar)
             .alignLeft()
             .textLine("Printer terhubung dengan baik.")

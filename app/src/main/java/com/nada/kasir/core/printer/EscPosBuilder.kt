@@ -1,5 +1,6 @@
 package com.nada.kasir.core.printer
 
+import android.graphics.Bitmap
 import java.io.ByteArrayOutputStream
 
 /**
@@ -80,6 +81,48 @@ class EscPosBuilder {
     fun feedAndCut(): EscPosBuilder {
         newLine(); newLine(); newLine()
         buffer.write(GS); buffer.write(0x56); buffer.write(0x00) // GS V 0 - full cut
+        return this
+    }
+
+    /**
+     * Cetak gambar (logo toko) sebagai raster bitmap monokrom, pakai perintah
+     * ESC/POS standar "GS v 0". Gambar diskalakan ke lebar target (dalam dot,
+     * bukan kolom karakter) lalu di-threshold jadi hitam/putih murni karena
+     * printer thermal tidak mendukung grayscale.
+     */
+    fun image(bitmap: Bitmap, lebarDotsTarget: Int): EscPosBuilder {
+        val lebarDots = (lebarDotsTarget / 8) * 8 // harus kelipatan 8 (1 byte = 8 dot horizontal)
+        if (lebarDots <= 0 || bitmap.width <= 0) return this
+
+        val rasio = lebarDots.toDouble() / bitmap.width
+        val tinggiDots = (bitmap.height * rasio).toInt().coerceAtLeast(1)
+        val skala = Bitmap.createScaledBitmap(bitmap, lebarDots, tinggiDots, true)
+
+        val lebarByte = lebarDots / 8
+        val data = ByteArray(lebarByte * tinggiDots)
+
+        for (y in 0 until tinggiDots) {
+            for (x in 0 until lebarDots) {
+                val pixel = skala.getPixel(x, y)
+                val alpha = (pixel ushr 24) and 0xFF
+                val r = (pixel ushr 16) and 0xFF
+                val g = (pixel ushr 8) and 0xFF
+                val b = pixel and 0xFF
+                val abuAbu = (r + g + b) / 3
+                // threshold sederhana: piksel gelap & tidak transparan -> dicetak (bit 1)
+                val hitam = alpha > 128 && abuAbu < 160
+                if (hitam) {
+                    val indexByte = y * lebarByte + (x / 8)
+                    val posisiBit = 7 - (x % 8)
+                    data[indexByte] = (data[indexByte].toInt() or (1 shl posisiBit)).toByte()
+                }
+            }
+        }
+
+        buffer.write(GS); buffer.write('v'.code); buffer.write('0'.code); buffer.write(0) // GS v 0 m=0 (normal)
+        buffer.write(lebarByte and 0xFF); buffer.write((lebarByte shr 8) and 0xFF)
+        buffer.write(tinggiDots and 0xFF); buffer.write((tinggiDots shr 8) and 0xFF)
+        buffer.write(data)
         return this
     }
 

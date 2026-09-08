@@ -31,7 +31,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("NADA KASIR CUSTOM", style = MaterialTheme.typography.headlineMedium)
+        Text("NADA POS", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(32.dp))
 
         OutlinedTextField(

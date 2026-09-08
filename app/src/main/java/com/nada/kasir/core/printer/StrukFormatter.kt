@@ -1,10 +1,12 @@
 package com.nada.kasir.core.printer
 
+import android.graphics.BitmapFactory
 import com.nada.kasir.core.data.local.entity.PaymentEntity
 import com.nada.kasir.core.data.local.entity.StoreEntity
 import com.nada.kasir.core.data.local.entity.TransactionEntity
 import com.nada.kasir.core.data.local.entity.TransactionItemEntity
 import com.nada.kasir.core.util.CurrencyFormatter
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -22,16 +24,23 @@ object StrukFormatter {
         payment: PaymentEntity?
     ): ByteArray {
         val lebar = if (store.ukuranKertas == "80mm") 48 else 32
+        val lebarDotsGambar = if (store.ukuranKertas == "80mm") 576 else 384 // resolusi umum printer thermal 203dpi
         val sdfTanggal = SimpleDateFormat("dd/MM/yyyy", Locale("id", "ID"))
         val sdfJam = SimpleDateFormat("HH:mm", Locale("id", "ID"))
         val tanggalTransaksi = Date(transaction.tanggalWaktu)
 
         val builder = EscPosBuilder().reset()
 
-        // Header: nama toko, alamat, WA (logo raster print bisa ditambahkan belakangan
-        // via GS v 0 bitmap command - untuk Phase 2 fokus dulu ke teks, cukup untuk mayoritas printer 58mm)
+        // Header: logo asli (jika sudah diunggah di Pengaturan Toko) dicetak sebagai gambar,
+        // fallback ke nama toko bertanda kurung kalau belum ada logo.
         builder.alignCenter()
-        if (store.tampilkanLogoStruk) {
+        val logoBitmap = store.logoPath?.takeIf { it.isNotBlank() && File(it).exists() }
+            ?.let { BitmapFactory.decodeFile(it) }
+        if (store.tampilkanLogoStruk && logoBitmap != null) {
+            builder.image(logoBitmap, lebarDotsGambar / 2) // logo dicetak setengah lebar kertas, tidak dominan
+            builder.newLine()
+            builder.bold(true).textLine(store.nama).bold(false)
+        } else if (store.tampilkanLogoStruk) {
             builder.bold(true).textLine("[ ${store.nama} ]").bold(false)
         } else {
             builder.bold(true).textLine(store.nama).bold(false)
@@ -118,7 +127,15 @@ object StrukFormatter {
             sb.append(kiri).append(" ".repeat(sisa)).append(kanan).append('\n')
         }
 
-        tengah(if (store.tampilkanLogoStruk) "[ ${store.nama} ]" else store.nama)
+        val punyaLogo = store.logoPath?.takeIf { it.isNotBlank() && java.io.File(it).exists() } != null
+        if (store.tampilkanLogoStruk && punyaLogo) {
+            tengah("[GAMBAR LOGO TOKO]")
+            tengah(store.nama)
+        } else if (store.tampilkanLogoStruk) {
+            tengah("[ ${store.nama} ]")
+        } else {
+            tengah(store.nama)
+        }
         if (store.tampilkanAlamatStruk && store.alamat.isNotBlank()) tengah(store.alamat)
         if (store.tampilkanWaStruk && store.whatsapp.isNotBlank()) tengah("WA: ${store.whatsapp}")
         garis()

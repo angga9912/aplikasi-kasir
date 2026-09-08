@@ -58,7 +58,7 @@ fun DashboardScreen(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        item { HeaderDashboard(namaToko = state.store?.nama ?: "NADA KASIR CUSTOM", namaPengguna = namaPengguna, onLogout = onLogout) }
+        item { HeaderDashboard(namaToko = state.store?.nama ?: "NADA POS", logoPath = state.store?.logoPath, namaPengguna = namaPengguna, onLogout = onLogout) }
         item { Spacer(Modifier.height(4.dp)) }
         item { RingkasanSection(state) }
         item { Spacer(Modifier.height(20.dp)) }
@@ -73,13 +73,13 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun HeaderDashboard(namaToko: String, namaPengguna: String, onLogout: () -> Unit) {
+private fun HeaderDashboard(namaToko: String, logoPath: String?, namaPengguna: String, onLogout: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }
     val sdfTanggal = remember { SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID")) }
 
     Column(modifier = Modifier.fillMaxWidth().padding(20.dp, 20.dp, 20.dp, 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Placeholder logo toko - elegan, tetap netral sampai logo asli diunggah di Pengaturan Toko
+            // Logo toko asli jika sudah diunggah (Pengaturan Toko), fallback ke ikon netral
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -87,7 +87,15 @@ private fun HeaderDashboard(namaToko: String, namaPengguna: String, onLogout: ()
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Storefront, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                if (!logoPath.isNullOrBlank() && java.io.File(logoPath).exists()) {
+                    coil.compose.AsyncImage(
+                        model = java.io.File(logoPath),
+                        contentDescription = "Logo toko",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    )
+                } else {
+                    Icon(Icons.Filled.Storefront, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                }
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

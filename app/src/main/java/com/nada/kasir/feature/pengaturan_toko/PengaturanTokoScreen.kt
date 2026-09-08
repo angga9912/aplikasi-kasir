@@ -1,5 +1,7 @@
 package com.nada.kasir.feature.pengaturan_toko
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,23 +10,29 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.nada.kasir.branding.ThemeConfig
 import com.nada.kasir.core.data.local.entity.StoreEntity
 import com.nada.kasir.core.paket.PaketAplikasi
+import java.io.File
 
 /** PENGATURAN TOKO (poin 1) + branding warna (poin 2) + custom struk (poin 10). */
 @Composable
 fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
     val storeDb by viewModel.store.collectAsState()
     val paketAktif by viewModel.paketAktif.collectAsState()
+    val context = LocalContext.current
     var tersimpanPesan by remember { mutableStateOf(false) }
 
     // State form lokal, diisi dari data toko begitu tersedia
@@ -58,6 +66,18 @@ fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
 
     Column(modifier = Modifier.fillMaxSize().verticalScrollFallback().padding(16.dp)) {
         Text("Pengaturan Toko", style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(16.dp))
+
+        // Logo Toko (poin 1 & 2) - dipakai di header Dashboard dan struk.
+        LogoTokoSection(
+            logoPath = storeDb?.logoPath,
+            onLogoDipilih = { uri ->
+                val current = storeDb ?: StoreEntity()
+                viewModel.gantiLogo(context, uri, current)
+            }
+        )
+        Spacer(Modifier.height(20.dp))
+        Divider()
         Spacer(Modifier.height(16.dp))
 
         // Pemilihan paket komersial (poin 29 brief awal) - satu source code, 3 tingkat fitur.
@@ -199,4 +219,43 @@ private fun BarisToggle(label: String, checked: Boolean, onCheckedChange: (Boole
 private fun Modifier.verticalScrollFallback(): Modifier {
     val scrollState = rememberScrollState()
     return this.verticalScroll(scrollState)
+}
+
+@Composable
+private fun LogoTokoSection(logoPath: String?, onLogoDipilih: (android.net.Uri) -> Unit) {
+    val pilihGambar = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) onLogoDipilih(uri)
+    }
+
+    Text("Logo Toko", style = MaterialTheme.typography.titleMedium)
+    Spacer(Modifier.height(4.dp))
+    Text(
+        "Logo ini akan tampil di header aplikasi dan di bagian atas struk.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(Modifier.height(10.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (!logoPath.isNullOrBlank() && File(logoPath).exists()) {
+                AsyncImage(
+                    model = File(logoPath),
+                    contentDescription = "Logo toko",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                )
+            } else {
+                Icon(Icons.Filled.Storefront, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        OutlinedButton(onClick = { pilihGambar.launch("image/*") }) {
+            Text(if (logoPath.isNullOrBlank()) "Unggah Logo" else "Ganti Logo")
+        }
+    }
 }

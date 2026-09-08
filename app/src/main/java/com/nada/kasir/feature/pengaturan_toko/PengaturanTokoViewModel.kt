@@ -1,11 +1,14 @@
 package com.nada.kasir.feature.pengaturan_toko
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nada.kasir.core.data.local.entity.StoreEntity
 import com.nada.kasir.core.data.repository.StoreRepository
 import com.nada.kasir.core.paket.PaketAplikasi
 import com.nada.kasir.core.paket.PaketRepository
+import com.nada.kasir.core.util.LogoStorageHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +32,16 @@ class PengaturanTokoViewModel @Inject constructor(
         viewModelScope.launch {
             storeRepository.simpan(store)
             onSelesai()
+        }
+    }
+
+    /** Ganti logo toko (poin 1 & 2). Logo disalin ke storage internal agar path-nya stabil. */
+    fun gantiLogo(context: Context, uri: Uri, storeSaatIni: StoreEntity) {
+        viewModelScope.launch {
+            val path = LogoStorageHelper.simpanLogoDariUri(context, uri)
+            if (path != null) {
+                storeRepository.simpan(storeSaatIni.copy(logoPath = path))
+            }
         }
     }
 
