@@ -24,7 +24,7 @@ android {
         create("demo") {
             dimension = "client"
             applicationIdSuffix = ".demo"
-            resValue("string", "app_name", "NADA KASIR CUSTOM")
+            resValue("string", "app_name", "NADA POS")
         }
         // create("tokoMakmur") {
         //     dimension = "client"
