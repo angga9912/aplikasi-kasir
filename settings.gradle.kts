@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NADA KASIR CUSTOM"
+rootProject.name = "NADA POS"
 include(":app")

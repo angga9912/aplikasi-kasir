@@ -3,7 +3,50 @@
 Aplikasi kasir Android yang dapat dikustomisasi per toko/UMKM. Dibangun dengan
 Kotlin + Jetpack Compose + Room (MVVM + Repository, offline-first).
 
-## Status: STRUKTUR PAKET BASIC / CUSTOM / PRO (selesai — siap diuji)
+## Status: GANTI NAMA APLIKASI & LOGO TOKO DI DALAM APP (selesai — siap diuji)
+
+- ✅ Nama aplikasi diganti dari "NADA KASIR CUSTOM" menjadi **"NADA POS"** di
+  semua tempat (label launcher, halaman Login, fallback header Dashboard, test
+  print). Package name (`com.nada.kasir`) TIDAK diubah — cuma nama tampilan.
+- ✅ **Upload Logo Toko** — di Pengaturan Toko, tombol "Unggah Logo" membuka
+  pemilih gambar (galeri), logo disalin ke storage internal aplikasi
+  (`LogoStorageHelper`) supaya path-nya stabil.
+- ✅ Logo asli sekarang tampil di **header Dashboard** (bulat, menggantikan
+  ikon toko generik), pakai Coil `AsyncImage`.
+- ✅ Logo asli juga **dicetak sebagai gambar sungguhan** di struk fisik (bukan
+  cuma teks nama toko dalam kurung) via perintah ESC/POS raster `GS v 0`
+  (`EscPosBuilder.image()`) — dikonversi otomatis ke hitam-putih murni karena
+  printer thermal tidak mendukung grayscale.
+- ✅ Preview struk (teks) menampilkan placeholder `[GAMBAR LOGO TOKO]` karena
+  preview berbasis teks tidak bisa merender gambar asli - tampilan fisik di
+  kertas akan menampilkan logo sungguhan.
+- ✅ Ikon aplikasi (launcher) sudah diganti sebelumnya ke logo NG yang diunggah.
+
+### Catatan
+- Kalau printer Anda printer sangat murah/model lama yang tidak mendukung
+  `GS v 0`, logo tidak akan tercetak (baris nama toko tetap tercetak sebagai
+  fallback teks). Kebanyakan printer thermal Bluetooth 2015 ke atas mendukung ini.
+
+
+
+- ✅ **Nomor antrian** — `NomorAntrianGenerator` menghitung ulang dari total
+  transaksi hari ini (Calendar 00:00–23:59), otomatis **reset ke 1 setiap
+  pergantian hari**. Terpisah dari nomor invoice (`INV-YYYYMMDD-XXXX`) yang
+  tidak pernah reset. Dicetak besar & tebal di bagian atas struk, juga muncul
+  di dialog "Transaksi Berhasil" dan daftar Riwayat Transaksi.
+- ✅ **Nama pembeli** — kolom opsional di dialog pembayaran Kasir. Kalau diisi,
+  tercetak sebagai baris "Pembeli: {nama}" di struk (baik cetak asli maupun
+  preview); kalau dikosongkan, baris ini tidak muncul sama sekali.
+- ✅ Kedua field ditambahkan ke `TransactionEntity` (versi database naik ke 2 -
+  karena masih tahap development/testing, skema lama akan otomatis di-reset
+  lewat `fallbackToDestructiveMigration`, **data lama akan terhapus** saat
+  update ini pertama kali dijalankan - beri tahu penggunanya).
+- ✅ Backup/Restore ikut menyimpan kedua field baru ini (`EntityJsonMapper`
+  diperbarui, supaya tidak hilang saat restore).
+- ✅ Unit test baru memverifikasi baris nomor antrian & nama pembeli tampil
+  tepat saat diisi, dan tidak muncul sama sekali saat kosong.
+
+
 
 Satu source code sekarang bisa melayani 3 tingkat paket komersial (poin 29 brief
 awal), diatur lewat 1 dropdown di **Pengaturan Toko** (Admin) — tanpa perlu
