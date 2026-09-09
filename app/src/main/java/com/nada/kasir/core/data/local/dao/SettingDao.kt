@@ -15,6 +15,9 @@ interface SettingDao {
     @Query("SELECT value FROM settings WHERE `key` = :key")
     suspend fun get(key: String): String?
 
+    @Query("SELECT * FROM settings WHERE `key` = :key LIMIT 1")
+    suspend fun findByKey(key: String): SettingEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(setting: SettingEntity)
 

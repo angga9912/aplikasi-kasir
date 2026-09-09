@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.nada.kasir.core.data.local.entity.UserEntity
+import com.nada.kasir.core.data.local.entity.UserRole
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -13,6 +14,9 @@ interface UserDao {
 
     @Query("SELECT * FROM users")
     fun observeAll(): Flow<List<UserEntity>>
+
+    @Query("SELECT COUNT(*) FROM users WHERE role = :role AND aktif = 1")
+    suspend fun countByRole(role: UserRole): Int
 
     @Insert
     suspend fun insert(user: UserEntity): Long

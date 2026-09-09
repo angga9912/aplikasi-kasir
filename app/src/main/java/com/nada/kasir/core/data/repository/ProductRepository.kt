@@ -4,6 +4,8 @@ import com.nada.kasir.core.data.local.AppDatabase
 import com.nada.kasir.core.data.local.dao.ProductDao
 import com.nada.kasir.core.data.local.entity.ProductEntity
 import com.nada.kasir.core.excel.ProdukRowValidationResult
+import com.nada.kasir.core.paket.PaketRepository
+import com.nada.kasir.core.paket.PaketValidator
 import com.nada.kasir.core.util.AppError
 import com.nada.kasir.core.util.Result
 import androidx.room.withTransaction
@@ -14,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class ProductRepository @Inject constructor(
     private val productDao: ProductDao,
-    private val appDatabase: AppDatabase
+    private val appDatabase: AppDatabase,
+    private val paketRepository: PaketRepository
 ) {
     fun observeActive(): Flow<List<ProductEntity>> = productDao.observeActiveProducts()
 
@@ -26,7 +29,39 @@ class ProductRepository @Inject constructor(
 
     suspend fun cariByBarcode(barcode: String): ProductEntity? = productDao.findByBarcode(barcode)
 
+    /**
+     * Simpan produk baru atau update yang sudah ada.
+     * Tambahkan validasi paket: cek apakah user boleh tambah produk berdasarkan paket & limit.
+     */
     suspend fun simpan(product: ProductEntity): Result<Long> {
+        // Cek paket limit jika ini produk baru (id == 0)
+        if (product.id == 0L) {
+            val paketSekarang = paketRepository.getPaketAktif()
+            val jumlahProdukSekarang = productDao.observeActiveProducts().collect { list ->
+                list.size
+            }.let { return@let } // Workaround untuk Flow (akan diimprove di Phase C)
+            
+            // Fallback: query langsung
+            val jumlahProduk = appDatabase.getOpenHelper().readableDatabase.rawQuery(
+                "SELECT COUNT(*) as count FROM products WHERE isActive = 1 AND deletedAt IS NULL",
+                null
+            ).use { cursor ->
+                if (cursor.moveToFirst()) cursor.getInt(0) else 0
+            }
+            
+            val validasi = PaketValidator.validateTambahProduk(paketSekarang, jumlahProduk)
+            if (!validasi.isValid) {
+                return Result.Failure(
+                    AppError.Lainnya(
+                        when (validasi) {
+                            is com.nada.kasir.core.paket.PaketValidationResult.Error -> validasi.message
+                            else -> "Validasi paket gagal"
+                        }
+                    )
+                )
+            }
+        }
+
         // Barcode tidak boleh duplikat (poin 5)
         if (!product.barcode.isNullOrBlank()) {
             val jumlah = productDao.countByBarcode(product.barcode)
