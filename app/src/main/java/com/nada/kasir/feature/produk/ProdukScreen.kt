@@ -14,16 +14,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nada.kasir.core.data.local.entity.ProductEntity
+import com.nada.kasir.core.paket.PaketAplikasi
+import com.nada.kasir.core.paket.isPaketFeatureEnabled
+import com.nada.kasir.core.paket.PaketFeature
 import com.nada.kasir.core.util.CurrencyFormatter
 import com.nada.kasir.core.util.FileShareHelper
+import com.nada.kasir.feature.upgrade.PaketBadge
+import com.nada.kasir.feature.upgrade.UpgradePromptDialog
 
-/** Halaman DATA PRODUK (poin 6), dengan Import/Export Excel (poin 15, Phase 3). */
+/** Halaman DATA PRODUK (poin 6), dengan Import/Export Excel (poin 15, Phase 3) dan Freemium gating. */
 @Composable
 fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewModel()) {
     val produkList by viewModel.daftarProduk.collectAsState()
     val paketAktif by viewModel.paketAktif.collectAsState()
     val pesanImportExport by viewModel.pesanImportExport.collectAsState()
     val fileExportTerakhir by viewModel.fileExportTerakhir.collectAsState()
+    val upgradePrompt by viewModel.showUpgradePrompt.collectAsState()
     var showForm by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<ProductEntity?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -43,7 +49,26 @@ fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewM
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (isAdmin && paketAktif.mencakup(com.nada.kasir.core.paket.PaketAplikasi.CUSTOM)) {
+            // Header dengan PaketBadge
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Data Produk",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                PaketBadge(
+                    paket = paketAktif,
+                    warning = paketAktif == PaketAplikasi.BASIC && produkList.size >= 45
+                )
+            }
+
+            // Import/Export buttons (hanya untuk CUSTOM & PRO)
+            if (isAdmin && isPaketFeatureEnabled(paketAktif, PaketFeature.IMPORT_EXPORT)) {
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                     OutlinedButton(
                         onClick = {
@@ -60,6 +85,7 @@ fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewM
                 }
             }
 
+            // Daftar produk
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(produkList) { produk ->
                     ListItem(
@@ -82,6 +108,7 @@ fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewM
         }
     }
 
+    // Dialog form produk
     if (showForm) {
         ProdukFormDialog(
             initial = editing,
@@ -93,6 +120,7 @@ fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewM
         )
     }
 
+    // Dialog import/export result
     pesanImportExport?.let { pesan ->
         AlertDialog(
             onDismissRequest = { viewModel.clearPesanImportExport() },
@@ -110,6 +138,7 @@ fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewM
         )
     }
 
+    // Dialog error
     errorMsg?.let { pesan ->
         AlertDialog(
             onDismissRequest = { errorMsg = null },
@@ -117,6 +146,17 @@ fun ProdukScreen(isAdmin: Boolean = true, viewModel: ProdukViewModel = hiltViewM
             title = { Text("Perhatian") },
             text = { Text(pesan) }
         )
+    }
+
+    // Dialog upgrade (trigger saat limit tercapai)
+    upgradePrompt?.let { (show, feature) ->
+        if (show) {
+            UpgradePromptDialog(
+                currentPaket = paketAktif,
+                attemptedFeature = feature,
+                onDismiss = { viewModel.clearUpgradePrompt() }
+            )
+        }
     }
 }
 

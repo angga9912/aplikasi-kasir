@@ -34,7 +34,7 @@ class ProdukViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val paketAktif: StateFlow<PaketAplikasi> = paketRepository.observePaketAktif()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaketAplikasi.PRO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaketAplikasi.BASIC)
 
     private val _pesanImportExport = MutableStateFlow<String?>(null)
     val pesanImportExport: StateFlow<String?> = _pesanImportExport
@@ -42,10 +42,21 @@ class ProdukViewModel @Inject constructor(
     private val _fileExportTerakhir = MutableStateFlow<File?>(null)
     val fileExportTerakhir: StateFlow<File?> = _fileExportTerakhir
 
+    private val _showUpgradePrompt = MutableStateFlow<Pair<Boolean, String>?>(null)  // Pair(show, feature)
+    val showUpgradePrompt: StateFlow<Pair<Boolean, String>?> = _showUpgradePrompt
+
     fun simpan(product: ProductEntity, onError: (String) -> Unit) {
         viewModelScope.launch {
             when (val result = productRepository.simpan(product)) {
-                is Result.Failure -> onError(result.error.pesan)
+                is Result.Failure -> {
+                    val errorMsg = result.error.pesan
+                    // Cek apakah error adalah limit paket - kalau iya, show upgrade dialog
+                    if (errorMsg.contains("terbatas", ignoreCase = true) || 
+                        errorMsg.contains("batas maksimal", ignoreCase = true)) {
+                        _showUpgradePrompt.value = Pair(true, "Tambah Produk")
+                    }
+                    onError(errorMsg)
+                }
                 is Result.Success -> Unit
             }
         }
@@ -80,7 +91,7 @@ class ProdukViewModel @Inject constructor(
             val (jumlahBerhasil, dilewati) = productRepository.importBanyak(hasil.berhasil)
             val ringkasan = StringBuilder("Import selesai: $jumlahBerhasil produk berhasil ditambahkan.")
             if (hasil.gagal.isNotEmpty()) {
-                ringkasan.append("\n${hasil.gagal.size} baris gagal (lihat baris: ${hasil.gagal.joinToString { "${it.first}" }}).")
+                ringkasan.append("\n${hasil.gagal.size} baris gagal (lihat baris: ${hasil.gagal.joinToString { "${it.first}" }}).") 
             }
             if (dilewati.isNotEmpty()) {
                 ringkasan.append("\n${dilewati.size} baris dilewati karena barcode duplikat.")
@@ -90,4 +101,5 @@ class ProdukViewModel @Inject constructor(
     }
 
     fun clearPesanImportExport() { _pesanImportExport.value = null }
+    fun clearUpgradePrompt() { _showUpgradePrompt.value = null }
 }
