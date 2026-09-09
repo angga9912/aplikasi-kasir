@@ -13,10 +13,18 @@ private const val KEY_PAKET_AKTIF = "paket_aktif"
 class PaketRepository @Inject constructor(
     private val settingDao: SettingDao
 ) {
-    /** Default PRO supaya instalasi yang sudah ada (mis. saat testing) tidak kehilangan menu tiba-tiba. */
+    /**
+     * Default BASIC untuk MVP freemium (gratis untuk semua user baru).
+     * Sebelumnya DEFAULT PRO hanya untuk testing, sekarang ubah ke BASIC.
+     */
     fun observePaketAktif(): Flow<PaketAplikasi> = settingDao.observeAll().map { list ->
         val value = list.firstOrNull { it.key == KEY_PAKET_AKTIF }?.value
-        value?.let { runCatching { PaketAplikasi.valueOf(it) }.getOrNull() } ?: PaketAplikasi.PRO
+        value?.let { runCatching { PaketAplikasi.valueOf(it) }.getOrNull() } ?: PaketAplikasi.BASIC
+    }
+
+    suspend fun getPaketAktif(): PaketAplikasi {
+        val setting = settingDao.findByKey(KEY_PAKET_AKTIF)
+        return setting?.value?.let { runCatching { PaketAplikasi.valueOf(it) }.getOrNull() } ?: PaketAplikasi.BASIC
     }
 
     suspend fun setPaketAktif(paket: PaketAplikasi) {
