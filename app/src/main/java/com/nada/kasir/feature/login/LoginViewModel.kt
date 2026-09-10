@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nada.kasir.core.data.local.entity.UserEntity
 import com.nada.kasir.core.data.repository.UserRepository
+import com.nada.kasir.core.lisensi.LicenseRepository
 import com.nada.kasir.core.session.SessionManager
 import com.nada.kasir.core.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +23,8 @@ data class LoginUiState(
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val licenseRepository: LicenseRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -38,6 +40,8 @@ class LoginViewModel @Inject constructor(
                 )
             }
         }
+        // Cek lisensi langganan setiap aplikasi dibuka - otomatis turun ke Basic kalau sudah kadaluarsa.
+        viewModelScope.launch { licenseRepository.cekDanTurunkanJikaKadaluarsa() }
     }
 
     fun login(username: String, password: String) {

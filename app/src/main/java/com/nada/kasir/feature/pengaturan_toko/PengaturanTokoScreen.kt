@@ -31,9 +31,11 @@ import java.io.File
 @Composable
 fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
     val storeDb by viewModel.store.collectAsState()
-    val paketAktif by viewModel.paketAktif.collectAsState()
+    val statusLisensi by viewModel.statusLisensi.collectAsState()
+    val pesanAktivasi by viewModel.pesanAktivasi.collectAsState()
     val context = LocalContext.current
     var tersimpanPesan by remember { mutableStateOf(false) }
+    var kodeAktivasi by remember { mutableStateOf("") }
 
     // State form lokal, diisi dari data toko begitu tersedia
     var nama by remember { mutableStateOf("") }
@@ -80,27 +82,54 @@ fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
         Divider()
         Spacer(Modifier.height(16.dp))
 
-        // Pemilihan paket komersial (poin 29 brief awal) - satu source code, 3 tingkat fitur.
-        Text("Paket Aplikasi", style = MaterialTheme.typography.titleMedium)
+        // Status lisensi & aktivasi kode (model bisnis freemium: Basic gratis, Custom/Pro berbayar)
+        Text("Status Lisensi", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(4.dp))
-        Text(
-            "Menentukan menu yang tersedia di aplikasi ini sesuai paket yang dibeli pelanggan.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(Modifier.height(8.dp))
-        PaketAplikasi.values().forEach { paket ->
-            Row(
-                modifier = Modifier.fillMaxWidth().clickable { viewModel.ubahPaket(paket) }.padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(selected = paketAktif == paket, onClick = { viewModel.ubahPaket(paket) })
-                Column {
-                    Text(paket.label, style = MaterialTheme.typography.bodyMedium)
-                    Text(paket.deskripsi, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text("Paket aktif: ${statusLisensi.paket.label}", style = MaterialTheme.typography.bodyMedium)
+                val kadaluarsaMillis = statusLisensi.kadaluarsaMillis
+                when {
+                    statusLisensi.paket == PaketAplikasi.BASIC -> Text(
+                        "Upgrade ke Custom/Pro untuk membuka lebih banyak fitur.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    statusLisensi.isLifetime -> Text(
+                        "Lisensi permanen - tidak pernah kadaluarsa.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    kadaluarsaMillis != null -> Text(
+                        "Aktif sampai: ${java.text.SimpleDateFormat("dd MMMM yyyy", java.util.Locale("id","ID")).format(java.util.Date(kadaluarsaMillis))}",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = kodeAktivasi,
+            onValueChange = { kodeAktivasi = it },
+            label = { Text("Kode Aktivasi") },
+            placeholder = { Text("NADA-PRO-20271231-XXXXXXXX") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = { viewModel.aktivasiLisensi(kodeAktivasi); kodeAktivasi = "" },
+            enabled = kodeAktivasi.isNotBlank(),
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Aktivasi") }
+        Text(
+            "Belum punya kode? Hubungi penjual aplikasi ini untuk upgrade paket.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
         Spacer(Modifier.height(20.dp))
         Divider()
         Spacer(Modifier.height(16.dp))
@@ -132,7 +161,7 @@ fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
             }
         }
 
-        if (paketAktif.mencakup(PaketAplikasi.CUSTOM)) {
+        if (statusLisensi.paket.mencakup(PaketAplikasi.CUSTOM)) {
             Spacer(Modifier.height(16.dp))
             Text("Warna Utama Aplikasi", style = MaterialTheme.typography.titleMedium)
             Row {
@@ -198,6 +227,15 @@ fun PengaturanTokoScreen(viewModel: PengaturanTokoViewModel = hiltViewModel()) {
             confirmButton = { TextButton(onClick = { tersimpanPesan = false }) { Text("OK") } },
             title = { Text("Tersimpan") },
             text = { Text("Pengaturan toko berhasil disimpan. Warna aplikasi akan langsung berubah.") }
+        )
+    }
+
+    pesanAktivasi?.let { pesan ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPesanAktivasi() },
+            confirmButton = { TextButton(onClick = { viewModel.clearPesanAktivasi() }) { Text("OK") } },
+            title = { Text("Aktivasi Lisensi") },
+            text = { Text(pesan) }
         )
     }
 }

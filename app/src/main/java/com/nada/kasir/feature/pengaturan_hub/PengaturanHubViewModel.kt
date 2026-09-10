@@ -15,5 +15,5 @@ class PengaturanHubViewModel @Inject constructor(
     paketRepository: PaketRepository
 ) : ViewModel() {
     val paketAktif: StateFlow<PaketAplikasi> = paketRepository.observePaketAktif()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaketAplikasi.PRO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaketAplikasi.BASIC)
 }

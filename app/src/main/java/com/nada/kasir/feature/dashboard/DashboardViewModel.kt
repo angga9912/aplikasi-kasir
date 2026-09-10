@@ -30,7 +30,7 @@ data class DashboardUiState(
     val store: StoreEntity? = null,
     val transaksiTerbaru: List<TransaksiTerbaruTampilan> = emptyList(),
     val sedangMemuatTransaksiTerbaru: Boolean = true,
-    val paketAktif: com.nada.kasir.core.paket.PaketAplikasi = com.nada.kasir.core.paket.PaketAplikasi.PRO
+    val paketAktif: com.nada.kasir.core.paket.PaketAplikasi = com.nada.kasir.core.paket.PaketAplikasi.BASIC
 )
 
 @HiltViewModel

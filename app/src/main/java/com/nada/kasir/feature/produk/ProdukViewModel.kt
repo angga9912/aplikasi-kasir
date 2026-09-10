@@ -34,7 +34,7 @@ class ProdukViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val paketAktif: StateFlow<PaketAplikasi> = paketRepository.observePaketAktif()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaketAplikasi.PRO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaketAplikasi.BASIC)
 
     private val _pesanImportExport = MutableStateFlow<String?>(null)
     val pesanImportExport: StateFlow<String?> = _pesanImportExport
